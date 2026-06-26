@@ -1,0 +1,13 @@
+{
+    "name": "bigcalm/match3",
+    "description": "A terminal-based Match-3 puzzle game",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "Match3\\": "src/"
+        }
+    },
+    "require": {
+        "php": ">=8.3"
+    }
+}
