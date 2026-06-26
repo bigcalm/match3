@@ -4,6 +4,8 @@ A terminal-based Match-3 puzzle game (Bejeweled / Candy Crush style) written in 
 
 Swap adjacent gems to form lines of 3+, clear them, and trigger cascading matches. Play through 20 levels with goals, track your score, and compete on the high score board.
 
+![Screenshot](screenshots/game.png)
+
 ## Requirements
 
 - PHP 8.3+
