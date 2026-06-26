@@ -20,9 +20,71 @@ $input = new Input($bindings);
 
 $cursorRow = 0;
 $cursorCol = 0;
+$selRow = -1;
+$selCol = -1;
+
+function handleClick(string $action, int &$cursorRow, int &$cursorCol, int &$selRow, int &$selCol, Grid $grid): void
+{
+    $parts = explode(':', $action);
+    $termCol = (int) ($parts[1] ?? 0);
+    $termRow = (int) ($parts[2] ?? 0);
+
+    $col = intdiv($termCol - 2, 4);
+    $row = intdiv($termRow - 2, 2);
+
+    if ($row < 0 || $row >= Grid::ROWS || $col < 0 || $col >= Grid::COLS) {
+        return;
+    }
+
+    $cursorRow = $row;
+    $cursorCol = $col;
+
+    if ($selRow === -1) {
+        $selRow = $row;
+        $selCol = $col;
+        return;
+    }
+
+    if ($row === $selRow && $col === $selCol) {
+        $selRow = -1;
+        $selCol = -1;
+        return;
+    }
+
+    attemptSwap($grid, $selRow, $selCol, $cursorRow, $cursorCol);
+    $selRow = -1;
+    $selCol = -1;
+}
+
+function attemptSwap(Grid $grid, int $r1, int $c1, int $r2, int $c2): void
+{
+    global $renderer, $cursorRow, $cursorCol;
+
+    if (!$grid->swap($r1, $c1, $r2, $c2)) {
+        return;
+    }
+
+    do {
+        $matches = $grid->findMatches();
+
+        if (empty($matches)) {
+            break;
+        }
+
+        for ($i = 0; $i < 3; $i++) {
+            echo $renderer->render($grid, $cursorRow, $cursorCol, -1, -1, $matches);
+            usleep(120000);
+            echo $renderer->render($grid, $cursorRow, $cursorCol, -1, -1, []);
+            usleep(120000);
+        }
+
+        $grid->removeMatches();
+        $grid->applyGravity();
+    } while (true);
+}
 
 while (true) {
-    echo $renderer->render($grid, $cursorRow, $cursorCol);
+    echo $renderer->render($grid, $cursorRow, $cursorCol, $selRow, $selCol);
 
     $action = $input->getAction();
 
@@ -35,16 +97,24 @@ while (true) {
     }
 
     if (str_starts_with($action, 'click:')) {
-        $parts = explode(':', $action);
-        $termCol = (int) ($parts[1] ?? 0);
-        $termRow = (int) ($parts[2] ?? 0);
+        handleClick($action, $cursorRow, $cursorCol, $selRow, $selCol, $grid);
+        continue;
+    }
 
-        $col = intdiv($termCol - 2, 4);
-        $row = intdiv($termRow - 2, 2);
-
-        if ($row >= 0 && $row < Grid::ROWS && $col >= 0 && $col < Grid::COLS) {
-            $cursorRow = $row;
-            $cursorCol = $col;
+    if ($action === 'select') {
+        if ($selRow === -1) {
+            $selRow = $cursorRow;
+            $selCol = $cursorCol;
+        } elseif ($cursorRow === $selRow && $cursorCol === $selCol) {
+            $selRow = -1;
+            $selCol = -1;
+        } elseif (abs($cursorRow - $selRow) + abs($cursorCol - $selCol) === 1) {
+            attemptSwap($grid, $selRow, $selCol, $cursorRow, $cursorCol);
+            $selRow = -1;
+            $selCol = -1;
+        } else {
+            $selRow = $cursorRow;
+            $selCol = $cursorCol;
         }
 
         continue;
