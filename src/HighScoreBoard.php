@@ -5,11 +5,13 @@ namespace Match3;
 class HighScoreBoard
 {
     private string $filePath;
+    private string $mode;
     private array $entries;
 
-    public function __construct(?string $filePath = null)
+    public function __construct(?string $filePath = null, string $mode = 'moves')
     {
         $this->filePath = $filePath ?? __DIR__ . '/../data/high_scores.json';
+        $this->mode = $mode;
         $this->entries = [];
         $this->load();
     }
@@ -22,6 +24,7 @@ class HighScoreBoard
             'level' => $level,
             'valid_moves' => $validMoves,
             'invalid_moves' => $invalidMoves,
+            'mode' => $this->mode,
         ];
 
         $this->sort();
@@ -30,27 +33,32 @@ class HighScoreBoard
 
     public function getTop(int $n = 10): array
     {
-        return array_slice($this->entries, 0, $n);
+        return array_slice($this->filtered(), 0, $n);
     }
 
     public function isHighScore(int $score): bool
     {
-        if (count($this->entries) < 10) {
+        $filtered = $this->filtered();
+
+        if (count($filtered) < 10) {
             return true;
         }
 
-        return $score > $this->entries[count($this->entries) - 1]['score'];
+        return $score > $filtered[count($filtered) - 1]['score'];
     }
 
     public function render(): string
     {
-        if (empty($this->entries)) {
-            return "No high scores yet.\n";
+        $filtered = $this->filtered();
+
+        if (empty($filtered)) {
+            return "No high scores for {$this->mode} mode yet.\n";
         }
 
         $out = '';
+        $heading = $this->mode === 'timer' ? 'HIGH SCORES — TIMER' : 'HIGH SCORES — MOVES';
         $out .= "\e[1m═══════════════════════════════════════\e[0m\n";
-        $out .= "\e[1m          HIGH SCORES\e[0m\n";
+        $out .= "\e[1m          {$heading}\e[0m\n";
         $out .= "\e[1m═══════════════════════════════════════\e[0m\n";
 
         $top = $this->getTop(10);
@@ -72,6 +80,25 @@ class HighScoreBoard
         return $out;
     }
 
+    public function renderAll(): string
+    {
+        $out = '';
+
+        $saved = $this->mode;
+        $this->mode = 'moves';
+        $out .= $this->render() . "\n";
+        $this->mode = 'timer';
+        $out .= $this->render();
+        $this->mode = $saved;
+
+        return $out;
+    }
+
+    private function filtered(): array
+    {
+        return array_values(array_filter($this->entries, fn(array $e): bool => ($e['mode'] ?? 'moves') === $this->mode));
+    }
+
     private function load(): void
     {
         if (!is_file($this->filePath)) {
@@ -91,7 +118,6 @@ class HighScoreBoard
         }
 
         $this->entries = $decoded;
-        $this->sort();
     }
 
     private function save(): void

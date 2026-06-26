@@ -70,15 +70,25 @@ class Renderer
         $level = $hud['level'] ?? 1;
         $score = $hud['score'] ?? 0;
         $scoreGoal = $hud['scoreGoal'] ?? 0;
-        $movesLeft = $hud['movesLeft'] ?? 0;
-        $movesTotal = $hud['movesTotal'] ?? 0;
         $validMoves = $hud['validMoves'] ?? 0;
         $invalidMoves = $hud['invalidMoves'] ?? 0;
+        $mode = $hud['mode'] ?? 'moves';
 
         $out = '';
 
         $out .= sprintf(" Level %-3d               Score: %d/%d\n", $level, $score, $scoreGoal);
-        $out .= sprintf(" Moves: %d/%-10d   Valid: %d  Invalid: %d\n", $movesLeft, $movesTotal, $validMoves, $invalidMoves);
+
+        if ($mode === 'timer') {
+            $timeLeft = $hud['timeLeft'] ?? 0;
+            $timeTotal = $hud['timeTotal'] ?? 1;
+            $min = intdiv($timeLeft, 60);
+            $sec = $timeLeft % 60;
+            $out .= sprintf(" Time: %d:%02d/%-10d   Valid: %d  Invalid: %d\n", $min, $sec, $timeTotal, $validMoves, $invalidMoves);
+        } else {
+            $movesLeft = $hud['movesLeft'] ?? 0;
+            $movesTotal = $hud['movesTotal'] ?? 0;
+            $out .= sprintf(" Moves: %d/%-10d   Valid: %d  Invalid: %d\n", $movesLeft, $movesTotal, $validMoves, $invalidMoves);
+        }
 
         if ($scoreGoal > 0) {
             $pct = min(1.0, $score / $scoreGoal);

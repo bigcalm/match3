@@ -10,6 +10,7 @@ use Match3\Input;
 register_shutdown_function([Input::class, 'restoreTerminal']);
 
 $preset = 'arrows';
+$mode = 'moves';
 $customBindings = null;
 
 for ($i = 1; $i < $argc; $i++) {
@@ -17,16 +18,16 @@ for ($i = 1; $i < $argc; $i++) {
         $preset = substr($argv[$i], 9);
     } elseif (str_starts_with($argv[$i], '--bindings=')) {
         $customBindings = substr($argv[$i], 11);
+    } elseif (str_starts_with($argv[$i], '--mode=')) {
+        $mode = substr($argv[$i], 7);
     }
 }
-
-$board = new HighScoreBoard();
 
 do {
     Input::enableRawMode();
     Input::enableMouseTracking();
 
-    $game = new Game($preset, $customBindings);
+    $game = new Game($preset, $customBindings, $mode);
     $result = $game->run();
 
     Input::restoreTerminal();
@@ -42,6 +43,8 @@ do {
     } else {
         echo "Game over! Score: {$result['score']}  (Reached level {$result['level']})\n";
     }
+
+    $board = new HighScoreBoard(mode: $mode);
 
     if ($board->isHighScore($result['score'])) {
         echo "New high score: {$result['score']}!\n";

@@ -28,8 +28,20 @@ class Input
         flush();
     }
 
-    public function getAction(): ?string
+    public function getAction(?int $timeoutUs = null): ?string
     {
+        if ($timeoutUs !== null) {
+            $read = [STDIN];
+            $write = [];
+            $except = [];
+            $sec = intdiv($timeoutUs, 1_000_000);
+            $usec = $timeoutUs % 1_000_000;
+
+            if (stream_select($read, $write, $except, $sec, $usec) === 0) {
+                return null;
+            }
+        }
+
         $bytes = $this->readInput();
 
         if ($bytes === '') {

@@ -18,11 +18,14 @@ class Game
     private int $invalidMoves = 0;
     private int $movesUsed = 0;
     private string $preset;
+    private string $mode;
+    private int $startTime = 0;
     private bool $gameOver = false;
 
-    public function __construct(string $preset = 'arrows', ?string $customBindings = null)
+    public function __construct(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves')
     {
         $this->preset = $preset;
+        $this->mode = $mode;
         $this->renderer = new Renderer();
 
         $bindings = new KeyBindings($preset);
@@ -38,14 +41,31 @@ class Game
 
     public function run(): array
     {
+        $this->startTime = hrtime(true);
+        $lastRender = 0;
+
         while (true) {
-            $this->render();
+            $now = hrtime(true);
+
+            if ($this->mode === 'timer') {
+                if ($now - $lastRender >= 200_000_000) {
+                    $this->render();
+                    $lastRender = $now;
+                }
+
+                if ($this->isTimeUp()) {
+                    $this->gameOver = true;
+                }
+            } else {
+                $this->render();
+            }
 
             if ($this->gameOver) {
                 break;
             }
 
-            $action = $this->input->getAction();
+            $timeout = ($this->mode === 'timer') ? 200_000 : null;
+            $action = $this->input->getAction($timeout);
 
             if ($action === null) {
                 continue;
@@ -93,6 +113,22 @@ class Game
         ];
     }
 
+    private function isTimeUp(): bool
+    {
+        if ($this->mode !== 'timer') {
+            return false;
+        }
+
+        $elapsed = (int) ((hrtime(true) - $this->startTime) / 1_000_000_000);
+        return $elapsed >= $this->level->getTimeLimit();
+    }
+
+    private function getTimeLeft(): int
+    {
+        $elapsed = (int) ((hrtime(true) - $this->startTime) / 1_000_000_000);
+        return max(0, $this->level->getTimeLimit() - $elapsed);
+    }
+
     private function render(): void
     {
         $hud = $this->buildHud();
@@ -114,15 +150,24 @@ class Game
 
     private function buildHud(): array
     {
-        return [
+        $hud = [
             'level' => $this->level->getNumber(),
             'score' => $this->score,
             'scoreGoal' => $this->level->getGoalTarget(0),
-            'movesLeft' => $this->level->getMoveLimit() - $this->movesUsed,
-            'movesTotal' => $this->level->getMoveLimit(),
             'validMoves' => $this->validMoves,
             'invalidMoves' => $this->invalidMoves,
+            'mode' => $this->mode,
         ];
+
+        if ($this->mode === 'timer') {
+            $hud['timeLeft'] = $this->getTimeLeft();
+            $hud['timeTotal'] = $this->level->getTimeLimit();
+        } else {
+            $hud['movesLeft'] = $this->level->getMoveLimit() - $this->movesUsed;
+            $hud['movesTotal'] = $this->level->getMoveLimit();
+        }
+
+        return $hud;
     }
 
     private function handleSelect(): void
@@ -192,7 +237,7 @@ class Game
 
     private function handleLeaderboard(): void
     {
-        $board = new HighScoreBoard();
+        $board = new HighScoreBoard(mode: $this->mode);
         echo "\e[2J\e[H" . $board->render() . "\nPress any key to return...\n";
 
         while (true) {
@@ -225,10 +270,13 @@ class Game
             if ($next !== null) {
                 $this->level = $next;
                 $this->movesUsed = 0;
+                $this->startTime = hrtime(true);
             } else {
                 $this->gameOver = true;
             }
-        } elseif ($this->movesUsed >= $this->level->getMoveLimit() || !$this->grid->hasValidMoves()) {
+        } elseif (!$this->grid->hasValidMoves()) {
+            $this->gameOver = true;
+        } elseif ($this->mode === 'moves' && $this->movesUsed >= $this->level->getMoveLimit()) {
             $this->gameOver = true;
         }
     }

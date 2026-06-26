@@ -13,6 +13,7 @@ class LevelTest extends TestCase
         $this->assertSame(1, $level->getNumber());
         $this->assertSame(7, $level->getGemTypes());
         $this->assertSame(40, $level->getMoveLimit());
+        $this->assertSame(120, $level->getTimeLimit());
     }
 
     public function testLevelIsNotCompleteAtZeroScore(): void

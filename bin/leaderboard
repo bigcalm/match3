@@ -6,4 +6,4 @@ require __DIR__ . '/../vendor/autoload.php';
 use Match3\HighScoreBoard;
 
 $board = new HighScoreBoard();
-echo $board->render();
+echo $board->renderAll();

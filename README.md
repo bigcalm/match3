@@ -25,9 +25,10 @@ php bin/play
 ### Command-line options
 
 | Option | Description |
-|---|---|
+|---|---|---|
 | `--preset=wasd` | Key binding preset: `arrows`, `wasd`, `hjkl` (default: `arrows`) |
 | `--bindings=path.json` | Load custom key bindings from a JSON file |
+| `--mode=timer` | Game mode: `moves` (default) or `timer`. Timer mode gives each level a time limit instead of a move limit |
 
 Examples:
 
@@ -35,6 +36,7 @@ Examples:
 php bin/play --preset=wasd
 php bin/play --preset=hjkl
 php bin/play --bindings=my_keys.json
+php bin/play --mode=timer --preset=wasd
 ```
 
 ## How to play
@@ -71,9 +73,9 @@ Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hi
 
 - Form a line of **3+ matching gems** horizontally or vertically to clear them.
 - New gems fall from above, potentially creating **chain reactions** (cascades).
-- Each level has a **score goal**. Reach it within the move limit to advance.
+- Each level has a **score goal**. Reach it within the limit (moves or time) to advance.
 - **20 levels** with increasing difficulty (fewer gem types, higher targets, fewer moves).
-- **Running out of valid moves** or **exceeding the move limit** ends the game.
+- **Running out of valid moves** or **exceeding the move/time limit** ends the game.
 - **High scores** are saved to `data/high_scores.json`. Tie-breaker: fewer invalid moves ranks higher.
 
 ### Scoring

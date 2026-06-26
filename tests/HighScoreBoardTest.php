@@ -139,4 +139,50 @@ class HighScoreBoardTest extends TestCase
         $render = $board->render();
         $this->assertStringContainsString('No high scores', $render);
     }
+
+    public function testModeFilteringSeparatesBoards(): void
+    {
+        $board = new HighScoreBoard($this->testFile);
+        $board->add('Alice', 500, 3, 15, 2);
+
+        $timerBoard = new HighScoreBoard($this->testFile, 'timer');
+        $timerBoard->add('Bob', 400, 2, 10, 1);
+
+        $movesTop = $board->getTop(10);
+        $timerTop = $timerBoard->getTop(10);
+
+        $this->assertCount(1, $movesTop);
+        $this->assertSame('Alice', $movesTop[0]['name']);
+
+        $this->assertCount(1, $timerTop);
+        $this->assertSame('Bob', $timerTop[0]['name']);
+    }
+
+    public function testModeHeadingInRender(): void
+    {
+        $board = new HighScoreBoard($this->testFile, 'timer');
+        $board->add('Alice', 500, 3, 15, 2);
+        $render = $board->render();
+        $this->assertStringContainsString('TIMER', $render);
+
+        $board2 = new HighScoreBoard($this->testFile, 'moves');
+        $board2->add('Bob', 400, 2, 10, 1);
+        $render2 = $board2->render();
+        $this->assertStringContainsString('MOVES', $render2);
+    }
+
+    public function testRenderAllShowsBothModes(): void
+    {
+        $board = new HighScoreBoard($this->testFile);
+        $board->add('Alice', 500, 3, 15, 2);
+
+        $timerBoard = new HighScoreBoard($this->testFile, 'timer');
+        $timerBoard->add('Bob', 400, 2, 10, 1);
+
+        $render = $board->renderAll();
+        $this->assertStringContainsString('MOVES', $render);
+        $this->assertStringContainsString('TIMER', $render);
+        $this->assertStringContainsString('Alice', $render);
+        $this->assertStringContainsString('Bob', $render);
+    }
 }
