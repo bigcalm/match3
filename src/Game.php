@@ -17,12 +17,21 @@ class Game
     private int $validMoves = 0;
     private int $invalidMoves = 0;
     private int $movesUsed = 0;
+    private string $preset;
     private bool $gameOver = false;
 
-    public function __construct()
+    public function __construct(string $preset = 'arrows', ?string $customBindings = null)
     {
+        $this->preset = $preset;
         $this->renderer = new Renderer();
-        $this->input = new Input(new KeyBindings('arrows'));
+
+        $bindings = new KeyBindings($preset);
+
+        if ($customBindings !== null) {
+            $bindings->loadCustom($customBindings);
+        }
+
+        $this->input = new Input($bindings);
         $this->level = new Level(1);
         $this->grid = new Grid($this->level->getGemTypes());
     }
@@ -82,7 +91,20 @@ class Game
     private function render(): void
     {
         $hud = $this->buildHud();
-        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, $this->selRow, $this->selCol, [], $hud);
+        $footer = $this->buildFooter();
+        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, $this->selRow, $this->selCol, [], $hud, $footer);
+    }
+
+    private function buildFooter(): string
+    {
+        $controls = match ($this->preset) {
+            'arrows' => '←↑↓→',
+            'wasd' => 'WASD',
+            'hjkl' => 'HJKL',
+            default => $this->preset,
+        };
+
+        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  Hint: H/?  |  Quit: Q";
     }
 
     private function buildHud(): array
@@ -158,7 +180,8 @@ class Game
         }
 
         $hud = $this->buildHud();
-        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud);
+        $footer = $this->buildFooter();
+        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud, $footer);
         usleep(400000);
     }
 
@@ -208,11 +231,12 @@ class Game
             $this->score += $stepScore * $multiplier;
 
             $hud = $this->buildHud();
+            $footer = $this->buildFooter();
 
             for ($i = 0; $i < 3; $i++) {
-                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $matches, $hud);
+                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $matches, $hud, $footer);
                 usleep(100000);
-                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud);
+                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
                 usleep(100000);
             }
 

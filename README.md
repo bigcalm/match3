@@ -20,42 +20,98 @@ composer install
 php bin/play
 ```
 
+### Command-line options
+
+| Option | Description |
+|---|---|
+| `--preset=wasd` | Key binding preset: `arrows`, `wasd`, `hjkl` (default: `arrows`) |
+| `--bindings=path.json` | Load custom key bindings from a JSON file |
+
+Examples:
+
+```bash
+php bin/play --preset=wasd
+php bin/play --preset=hjkl
+php bin/play --bindings=my_keys.json
+```
+
 ## How to play
 
-- **Arrow keys** / `WASD` / `HJKL` — move the cursor
-- **Space** — select a gem, then swap with an adjacent gem
-- **Enter** — confirm
-- **Q** / **Escape** — quit
+### Controls
+
+| Action | arrows | wasd | hjkl |
+|---|---|---|---|
+| Move cursor | `↑` `↓` `←` `→` | `W` `A` `S` `D` | `K` `H` `J` `L` |
+| Select / swap | `Space` | `Space` / `F` | `Space` / `F` |
+| Confirm | `Enter` | `Enter` | `Enter` |
+| Hint | `H` / `?` | `H` / `?` | `?` |
+| Quit | `Q` / `Escape` | `Q` / `Escape` | `Q` / `Escape` |
 
 You can also click gems with the mouse.
 
-### Key bindings
+### Custom key bindings
 
-Three built-in presets (`arrows`, `wasd`, `hjkl`). Default is arrows. Custom bindings can be loaded from a JSON file. See `AGENTS.md` for the full action list.
+Create a JSON file mapping key names or byte sequences to actions:
+
+```json
+{
+    "i": "up", "j": "left", "k": "down", "l": "right",
+    " ": "select", "q": "quit",
+    "up": "up", "space": "select", "escape": "quit"
+}
+```
+
+Recognised key names: `up`, `down`, `left`, `right`, `space`, `enter`, `escape`, `tab`, or any single character.
+Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hint`, `cancel`.
 
 ## Rules
 
-- Form a line of 3+ matching gems horizontally or vertically to clear them.
-- New gems fall from above, potentially creating chain reactions (cascades).
-- Each level has a goal (score target, clear gems of a colour, etc.). Reach it to advance.
-- Running out of valid moves ends the game. Exceeding the move limit fails the level.
-- Score: 30 pts (3-match), 60 pts (4-match), 100 pts (5-match). Cascades earn a ×2 multiplier per step.
+- Form a line of **3+ matching gems** horizontally or vertically to clear them.
+- New gems fall from above, potentially creating **chain reactions** (cascades).
+- Each level has a **score goal**. Reach it within the move limit to advance.
+- **20 levels** with increasing difficulty (fewer gem types, higher targets, fewer moves).
+- **Running out of valid moves** or **exceeding the move limit** ends the game.
+- **High scores** are saved to `data/high_scores.json`. Tie-breaker: fewer invalid moves ranks higher.
+
+### Scoring
+
+| Match | Points |
+|---|---|
+| 3 gems | 30 |
+| 4 gems | 60 |
+| 5+ gems | 100 |
+
+Each cascade step doubles the points (step 1 = ×1, step 2 = ×2, step 3 = ×4, …).
+
+## Development
+
+```bash
+composer install           # Install dependencies (dev included)
+php -l src/                # Lint all source files
+./vendor/bin/phpunit       # Run tests (58 tests, PHPUnit 13)
+```
 
 ## Project structure
 
 ```
 src/
 ├── Game.php              # Main loop and state machine
-├── Grid.php              # Gem grid, match detection, cascade
-├── HighScoreBoard.php    # Persistent high scores
-├── Input.php             # Raw terminal input
+├── Grid.php              # Gem grid, match detection, cascade, hints
+├── HighScoreBoard.php    # Persistent high scores (JSON)
+├── Input.php             # Raw terminal input, mouse tracking
 ├── KeyBindings.php       # Key binding presets and custom maps
-├── Level.php             # Level definitions and goals
-└── Renderer.php          # ANSI frame rendering
+├── Level.php             # 20-level table with goals and move limits
+└── Renderer.php          # ANSI frame rendering, HUD, controls footer
 data/
 └── high_scores.json      # Persisted high scores
+tests/
+├── FunctionalTest.php    # Integration tests
+├── GridTest.php          # Grid logic tests
+├── HighScoreBoardTest.php
+├── KeyBindingsTest.php
+└── LevelTest.php
 bin/
-└── play                  # Entry point
+└── play                  # Entry point (CLI arg parsing, restart loop)
 ```
 
 ## License

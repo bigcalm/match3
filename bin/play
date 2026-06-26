@@ -9,13 +9,24 @@ use Match3\Input;
 
 register_shutdown_function([Input::class, 'restoreTerminal']);
 
+$preset = 'arrows';
+$customBindings = null;
+
+for ($i = 1; $i < $argc; $i++) {
+    if (str_starts_with($argv[$i], '--preset=')) {
+        $preset = substr($argv[$i], 9);
+    } elseif (str_starts_with($argv[$i], '--bindings=')) {
+        $customBindings = substr($argv[$i], 11);
+    }
+}
+
 $board = new HighScoreBoard();
 
 do {
     Input::enableRawMode();
     Input::enableMouseTracking();
 
-    $game = new Game();
+    $game = new Game($preset, $customBindings);
     $result = $game->run();
 
     Input::restoreTerminal();
