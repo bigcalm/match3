@@ -379,12 +379,7 @@ class Game
             $hud = $this->buildHud();
             $footer = $this->buildFooter();
 
-            for ($i = 0; $i < 3; $i++) {
-                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
-                usleep(100000);
-                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
-                usleep(100000);
-            }
+            $this->animateFlash($flashCells, $hud, $footer);
 
             $keepMap = [];
             foreach ($keep as [$kr, $kc]) {
@@ -407,9 +402,27 @@ class Game
             }
 
             $this->grid->removeCells(array_values($toClear));
+
+            if (!empty($toClear)) {
+                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+                usleep(120000);
+            }
+
             $this->grid->applyGravity();
+            echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+            usleep(80000);
             $cascadeStep++;
         } while (true);
+    }
+
+    private function animateFlash(array $flashCells, array $hud, string $footer): void
+    {
+        for ($i = 0; $i < 3; $i++) {
+            echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
+            usleep(100000);
+            echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+            usleep(80000);
+        }
     }
 
     private function scoreMatches(array $matches): int

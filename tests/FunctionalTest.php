@@ -152,6 +152,130 @@ class FunctionalTest extends TestCase
         $this->assertFalse(isset($activatedSet["3,4"]));
     }
 
+    public function testThreeMatchAnimatesAndClears(): void
+    {
+        $grid = new Grid(7);
+
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+
+        $grid->setCell(2, 2, 5);
+        $grid->setCell(2, 3, 5);
+        $grid->setCell(2, 4, 5);
+
+        $matches = $grid->findMatches();
+        $this->assertCount(3, $matches);
+
+        $groups = $grid->groupMatches($matches);
+        $this->assertCount(1, $groups);
+        $this->assertCount(3, $groups[0]);
+
+        $toClear = [];
+        foreach ($matches as [$mr, $mc]) {
+            $toClear["$mr,$mc"] = [$mr, $mc];
+        }
+
+        $grid->removeCells(array_values($toClear));
+        $this->assertSame(-1, $grid->getCell(2, 2));
+        $this->assertSame(-1, $grid->getCell(2, 3));
+        $this->assertSame(-1, $grid->getCell(2, 4));
+
+        $grid->applyGravity();
+
+        $this->assertNotSame(-1, $grid->getCell(2, 2));
+        $this->assertNotSame(-1, $grid->getCell(2, 3));
+        $this->assertNotSame(-1, $grid->getCell(2, 4));
+    }
+
+    public function testFourMatchCreatesStripedViaCascade(): void
+    {
+        $grid = new Grid(7);
+
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+
+        $grid->setCell(0, 0, 1);
+        $grid->setCell(0, 1, 1);
+        $grid->setCell(0, 2, 1);
+        $grid->setCell(0, 3, 1);
+        $grid->setCell(0, 4, 2);
+
+        $matches = $grid->findMatches();
+        $this->assertCount(4, $matches);
+
+        $groups = $grid->groupMatches($matches);
+        $pos = $grid->createSpecial($groups[0]);
+        $this->assertSame(Grid::STRIPED_H, $grid->getSpecial($pos[0], $pos[1]));
+
+        $grid->removeMatches([$pos]);
+        $this->assertNotSame(-1, $grid->getCell($pos[0], $pos[1]));
+        $this->assertSame(Grid::STRIPED_H, $grid->getSpecial($pos[0], $pos[1]));
+
+        $grid->applyGravity();
+        $this->assertSame(Grid::STRIPED_H, $grid->getSpecial($pos[0], $pos[1]));
+    }
+
+    public function testSixMatchCreatesHypercubeViaCascade(): void
+    {
+        $grid = new Grid(7);
+
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+
+        for ($c = 0; $c < 6; $c++) {
+            $grid->setCell(0, $c, 1);
+        }
+        $grid->setCell(0, 6, 2);
+
+        $matches = $grid->findMatches();
+        $this->assertCount(6, $matches);
+
+        $groups = $grid->groupMatches($matches);
+        $pos = $grid->createSpecial($groups[0]);
+        $this->assertSame(Grid::HYPERCUBE, $grid->getSpecial($pos[0], $pos[1]));
+
+        $grid->removeMatches([$pos]);
+        $grid->applyGravity();
+        $this->assertSame(Grid::HYPERCUBE, $grid->getSpecial($pos[0], $pos[1]));
+    }
+
+    public function testHypercubeSwapClearsAllOfType(): void
+    {
+        $grid = new Grid(7);
+
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+
+        $grid->setCell(3, 3, 2);
+        $grid->setCell(4, 3, 2);
+        $grid->setCell(3, 4, 2);
+        $grid->setSpecial(3, 3, Grid::HYPERCUBE);
+
+        $this->assertTrue($grid->swap(3, 3, 3, 4));
+
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $this->assertNotSame(-1, $grid->getCell($r, $c));
+            }
+        }
+    }
+
     public function testFiveMatchCreatesBombViaCascade(): void
     {
         $grid = new Grid(7);

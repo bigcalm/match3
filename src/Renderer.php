@@ -11,32 +11,28 @@ class Renderer
 
     private const array COLORS = [31, 32, 33, 34, 35, 36, 37, 90];
 
-    private function gemStyle(int $gem, int $special, int $color, bool $highlight, bool $cursor, bool $selected): string
+    private function gem(int $gem, int $special): string
     {
+        if ($gem === -1) {
+            return '  │';
+        }
+
+        $color = self::COLORS[$gem];
         $symbol = self::GEMS[$gem];
 
         if ($special === Grid::HYPERCUBE) {
             $symbol = '✦';
         }
 
-        $ansi = '';
-
-        if ($highlight) {
-            $ansi .= "\e[1m\e[7m";
-        } elseif ($cursor) {
-            $ansi .= "\e[7m";
-        } elseif ($selected) {
-            $ansi .= "\e[4m";
-        }
+        $code = '';
 
         if ($special === Grid::STRIPED_H || $special === Grid::STRIPED_V) {
-            $ansi .= "\e[4m";
+            $code = "\e[4m";
         } elseif ($special === Grid::BOMB) {
-            $ansi .= "\e[1m";
+            $code = "\e[1m";
         }
 
-        $ansi .= "\e[{$color}m{$symbol}\e[0m";
-        return " {$ansi} │";
+        return " {$code}\e[{$color}m{$symbol}\e[0m │";
     }
 
     public function render(
@@ -65,16 +61,37 @@ class Renderer
             $out .= '│';
             for ($c = 0; $c < Grid::COLS; $c++) {
                 $gem = $grid->getCell($r, $c);
-                $color = self::COLORS[$gem];
 
-                $out .= $this->gemStyle(
-                    $gem,
-                    $grid->getSpecial($r, $c),
-                    $color,
-                    isset($highlightSet["$r,$c"]),
-                    $r === $cursorRow && $c === $cursorCol,
-                    $r === $selectedRow && $c === $selectedCol,
-                );
+                if ($gem === -1) {
+                    $out .= '   │';
+                    continue;
+                }
+
+                $special = $grid->getSpecial($r, $c);
+                $color = self::COLORS[$gem];
+                $symbol = self::GEMS[$gem];
+
+                if ($special === Grid::HYPERCUBE) {
+                    $symbol = '✦';
+                }
+
+                $sel = $r === $cursorRow && $c === $cursorCol;
+                $spc = $special === Grid::STRIPED_H || $special === Grid::STRIPED_V;
+                $bomb = $special === Grid::BOMB;
+
+                if (isset($highlightSet["$r,$c"])) {
+                    $out .= " \e[1m\e[7m\e[{$color}m{$symbol}\e[0m │";
+                } elseif ($sel) {
+                    $out .= " \e[7m\e[{$color}m{$symbol}\e[0m │";
+                } elseif ($r === $selectedRow && $c === $selectedCol) {
+                    $out .= " \e[4m\e[{$color}m{$symbol}\e[0m │";
+                } elseif ($spc) {
+                    $out .= " \e[4m\e[{$color}m{$symbol}\e[0m │";
+                } elseif ($bomb) {
+                    $out .= " \e[1m\e[{$color}m{$symbol}\e[0m │";
+                } else {
+                    $out .= " \e[{$color}m{$symbol}\e[0m │";
+                }
             }
             $out .= "\n";
             if ($r < Grid::ROWS - 1) {

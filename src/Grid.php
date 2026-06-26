@@ -131,14 +131,12 @@ class Grid
         [$hr, $hc, $tr, $tc] = $hcFirst ? [$r1, $c1, $r2, $c2] : [$r2, $c2, $r1, $c1];
 
         $targetType = $this->grid[$tr][$tc];
-        $this->grid[$hr][$hc] = $targetType;
-        $this->grid[$tr][$tc] = -1;
         $this->special[$hr][$hc] = self::NONE;
         $this->special[$tr][$tc] = self::NONE;
 
         for ($r = 0; $r < self::ROWS; $r++) {
             for ($c = 0; $c < self::COLS; $c++) {
-                if ($this->grid[$r][$c] === $targetType && !($r === $hr && $c === $hc)) {
+                if ($this->grid[$r][$c] === $targetType) {
                     $this->grid[$r][$c] = -1;
                     $this->special[$r][$c] = self::NONE;
                 }
