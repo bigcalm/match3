@@ -1,3 +1,5 @@
 /vendor/
 /data/high_scores.json
 .phpunit.cache/
+REVIEW.md
+session-ses_*.md

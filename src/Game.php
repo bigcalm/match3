@@ -22,6 +22,18 @@ class Game
     private int $startTime = 0;
     private bool $gameOver = false;
 
+    private const int TIMER_RENDER_INTERVAL_NS = 200_000_000;
+    private const int INPUT_TIMEOUT_US = 200_000;
+    private const int HINT_DISPLAY_US = 400_000;
+    private const int CASCADE_GAP_US = 120_000;
+    private const int CASCADE_SETTLE_US = 80_000;
+    private const int FLASH_ON_US = 100_000;
+    private const int FLASH_OFF_US = 80_000;
+    private const int CLICK_COL_OFFSET = 2;
+    private const int CLICK_COL_STRIDE = 4;
+    private const int CLICK_ROW_OFFSET = 2;
+    private const int CLICK_ROW_STRIDE = 2;
+
     public function __construct(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves')
     {
         $this->preset = $preset;
@@ -90,7 +102,7 @@ class Game
             $now = hrtime(true);
 
             if ($this->mode === 'timer') {
-                if ($now - $lastRender >= 200_000_000) {
+                if ($now - $lastRender >= self::TIMER_RENDER_INTERVAL_NS) {
                     $this->render();
                     $lastRender = $now;
                 }
@@ -106,7 +118,7 @@ class Game
                 break;
             }
 
-            $timeout = ($this->mode === 'timer') ? 200_000 : null;
+            $timeout = ($this->mode === 'timer') ? self::INPUT_TIMEOUT_US : null;
             $action = $this->input->getAction($timeout);
 
             if ($action === null) {
@@ -236,8 +248,8 @@ class Game
         $termCol = (int) ($parts[1] ?? 0);
         $termRow = (int) ($parts[2] ?? 0);
 
-        $col = intdiv($termCol - 2, 4);
-        $row = intdiv($termRow - (2 + Renderer::HUD_LINES), 2);
+        $col = intdiv($termCol - self::CLICK_COL_OFFSET, self::CLICK_COL_STRIDE);
+        $row = intdiv($termRow - (self::CLICK_ROW_OFFSET + Renderer::HUD_LINES), self::CLICK_ROW_STRIDE);
 
         if ($row < 0 || $row >= Grid::ROWS || $col < 0 || $col >= Grid::COLS) {
             return;
@@ -274,7 +286,7 @@ class Game
         $hud = $this->buildHud();
         $footer = $this->buildFooter();
         echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud, $footer);
-        usleep(400000);
+        usleep(self::HINT_DISPLAY_US);
     }
 
     private function handleLeaderboard(): void
@@ -406,13 +418,13 @@ class Game
             if (!empty($toClear)) {
                 echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
                 flush();
-                usleep(120000);
+                usleep(self::CASCADE_GAP_US);
             }
 
             $this->grid->applyGravity();
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
             flush();
-            usleep(80000);
+            usleep(self::CASCADE_SETTLE_US);
             $cascadeStep++;
         } while (true);
     }
@@ -422,10 +434,10 @@ class Game
         for ($i = 0; $i < 3; $i++) {
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
             flush();
-            usleep(100000);
+            usleep(self::FLASH_ON_US);
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
             flush();
-            usleep(80000);
+            usleep(self::FLASH_OFF_US);
         }
     }
 

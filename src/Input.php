@@ -4,6 +4,8 @@ namespace Match3;
 
 class Input
 {
+    private const int ESCAPE_TIMEOUT_US = 10000;
+
     private KeyBindings $bindings;
 
     public function __construct(KeyBindings $bindings)
@@ -76,7 +78,7 @@ class Input
 
         $seq = "\e";
         stream_set_blocking(STDIN, false);
-        usleep(10000);
+        usleep(self::ESCAPE_TIMEOUT_US);
 
         $rest = fread(STDIN, 64);
 
