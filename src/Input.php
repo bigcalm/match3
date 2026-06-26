@@ -62,7 +62,7 @@ class Input
         return $this->bindings->getAction($bytes);
     }
 
-    private function readInput(): string
+    protected function readInput(): string
     {
         $byte = fread(STDIN, 1);
 

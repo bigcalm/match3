@@ -86,6 +86,7 @@ bin/play
 - Remove matched cells, shift columns down, fill top with random gems, repeat until stable.
 - Matches of 4+ create special gems at one position (striped for 4, bomb for 5, hypercube for 6+).
 - Special gems that fall into a match activate their effect (clear row/column, blast area, or clear all of a colour).
+- Cascade animates in three phases per step: flash (matched cells flash 3 times), gaps (matched cells disappear), settle (gravity fills and board rests).
 
 ### Levels
 
