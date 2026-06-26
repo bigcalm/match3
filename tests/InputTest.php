@@ -16,9 +16,10 @@ class InputTest extends TestCase
             'middle button' => ["\e[<1;5;10M",  [5, 10]],
             'right button'  => ["\e[<2;1;1M",   [1, 1]],
             'no button'     => ["\e[<3;80;24M", [80, 24]],
+            'm terminator'  => ["\e[<0;15;18m", [15, 18]],
             'zero coords'   => ["\e[<0;0;0M",   [0, 0]],
             'large coords'  => ["\e[<0;999;999M", [999, 999]],
-            'm terminator'  => ["\e[<0;15;18m", [15, 18]],
+
         ];
     }
 

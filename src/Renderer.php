@@ -11,30 +11,6 @@ class Renderer
 
     private const array COLORS = [31, 32, 33, 34, 35, 36, 37, 90];
 
-    private function gem(int $gem, int $special): string
-    {
-        if ($gem === -1) {
-            return '  │';
-        }
-
-        $color = self::COLORS[$gem];
-        $symbol = self::GEMS[$gem];
-
-        if ($special === Grid::HYPERCUBE) {
-            $symbol = '✦';
-        }
-
-        $code = '';
-
-        if ($special === Grid::STRIPED_H || $special === Grid::STRIPED_V) {
-            $code = "\e[4m";
-        } elseif ($special === Grid::BOMB) {
-            $code = "\e[1m";
-        }
-
-        return " {$code}\e[{$color}m{$symbol}\e[0m │";
-    }
-
     public function render(
         Grid $grid,
         int $cursorRow = 0,

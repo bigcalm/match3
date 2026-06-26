@@ -66,7 +66,7 @@ class Game
         if ($board->isHighScore($result['score'])) {
             echo "New high score: {$result['score']}!\n";
             echo "Enter your name: ";
-            $name = trim(fgets(STDIN));
+            $name = preg_replace('/[[:^print:]]/', '', trim(fgets(STDIN)));
 
             if ($name === '') {
                 $name = 'Anonymous';
@@ -405,11 +405,13 @@ class Game
 
             if (!empty($toClear)) {
                 echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+                flush();
                 usleep(120000);
             }
 
             $this->grid->applyGravity();
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+            flush();
             usleep(80000);
             $cascadeStep++;
         } while (true);
@@ -419,8 +421,10 @@ class Game
     {
         for ($i = 0; $i < 3; $i++) {
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
+            flush();
             usleep(100000);
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+            flush();
             usleep(80000);
         }
     }
