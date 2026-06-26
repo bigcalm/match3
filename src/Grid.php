@@ -7,8 +7,15 @@ class Grid
     public const ROWS = 8;
     public const COLS = 8;
 
+    public const int NONE = 0;
+    public const int STRIPED_H = 1;
+    public const int STRIPED_V = 2;
+    public const int BOMB = 3;
+    public const int HYPERCUBE = 4;
+
     private int $gemTypes;
     private array $grid = [];
+    private array $special = [];
 
     public function __construct(int $gemTypes = 7)
     {
@@ -21,6 +28,7 @@ class Grid
         for ($r = 0; $r < self::ROWS; $r++) {
             for ($c = 0; $c < self::COLS; $c++) {
                 $this->grid[$r][$c] = random_int(0, $this->gemTypes - 1);
+                $this->special[$r][$c] = self::NONE;
             }
         }
 
@@ -85,10 +93,27 @@ class Grid
         $this->grid[$row][$col] = $gem;
     }
 
+    public function getSpecial(int $row, int $col): int
+    {
+        return $this->special[$row][$col] ?? self::NONE;
+    }
+
+    public function setSpecial(int $row, int $col, int $type): void
+    {
+        $this->special[$row][$col] = $type;
+    }
+
     public function swap(int $r1, int $c1, int $r2, int $c2): bool
     {
         if (abs($r1 - $r2) + abs($c1 - $c2) !== 1) {
             return false;
+        }
+
+        $h1 = $this->special[$r1][$c1] === self::HYPERCUBE;
+        $h2 = $this->special[$r2][$c2] === self::HYPERCUBE;
+
+        if ($h1 || $h2) {
+            return $this->hypercubeSwap($r1, $c1, $r2, $c2, $h1);
         }
 
         $this->swapCells($r1, $c1, $r2, $c2);
@@ -101,7 +126,31 @@ class Grid
         return true;
     }
 
-    public function removeMatches(): array
+    private function hypercubeSwap(int $r1, int $c1, int $r2, int $c2, bool $hcFirst): bool
+    {
+        [$hr, $hc, $tr, $tc] = $hcFirst ? [$r1, $c1, $r2, $c2] : [$r2, $c2, $r1, $c1];
+
+        $targetType = $this->grid[$tr][$tc];
+        $this->grid[$hr][$hc] = $targetType;
+        $this->grid[$tr][$tc] = -1;
+        $this->special[$hr][$hc] = self::NONE;
+        $this->special[$tr][$tc] = self::NONE;
+
+        for ($r = 0; $r < self::ROWS; $r++) {
+            for ($c = 0; $c < self::COLS; $c++) {
+                if ($this->grid[$r][$c] === $targetType && !($r === $hr && $c === $hc)) {
+                    $this->grid[$r][$c] = -1;
+                    $this->special[$r][$c] = self::NONE;
+                }
+            }
+        }
+
+        $this->applyGravity();
+
+        return true;
+    }
+
+    public function removeMatches(?array $keepPositions = null): array
     {
         $matches = $this->findMatches();
 
@@ -109,8 +158,20 @@ class Grid
             return [];
         }
 
+        $keep = [];
+
+        if ($keepPositions !== null) {
+            foreach ($keepPositions as [$r, $c]) {
+                $keep["$r,$c"] = true;
+            }
+        }
+
         foreach ($matches as [$r, $c]) {
+            if (isset($keep["$r,$c"])) {
+                continue;
+            }
             $this->grid[$r][$c] = -1;
+            $this->special[$r][$c] = self::NONE;
         }
 
         return $matches;
@@ -124,13 +185,136 @@ class Grid
             for ($r = self::ROWS - 1; $r >= 0; $r--) {
                 if ($this->grid[$r][$c] !== -1) {
                     $this->grid[$write][$c] = $this->grid[$r][$c];
+                    $this->special[$write][$c] = $this->special[$r][$c];
                     $write--;
                 }
             }
 
             for ($r = $write; $r >= 0; $r--) {
                 $this->grid[$r][$c] = random_int(0, $this->gemTypes - 1);
+                $this->special[$r][$c] = self::NONE;
             }
+        }
+    }
+
+    public function groupMatches(array $positions): array
+    {
+        $set = [];
+
+        foreach ($positions as [$r, $c]) {
+            $set["$r,$c"] = [$r, $c];
+        }
+
+        $groups = [];
+        $visited = [];
+
+        foreach ($set as $key => $pos) {
+            if (isset($visited[$key])) {
+                continue;
+            }
+
+            $group = [];
+            $queue = [$pos];
+
+            while (!empty($queue)) {
+                [$cr, $cc] = array_shift($queue);
+                $ck = "$cr,$cc";
+
+                if (isset($visited[$ck])) {
+                    continue;
+                }
+
+                $visited[$ck] = true;
+                $group[] = [$cr, $cc];
+
+                foreach ([[-1, 0], [1, 0], [0, -1], [0, 1]] as [$dr, $dc]) {
+                    $nr = $cr + $dr;
+                    $nc = $cc + $dc;
+                    $nk = "$nr,$nc";
+
+                    if (isset($set[$nk]) && !isset($visited[$nk])) {
+                        $queue[] = [$nr, $nc];
+                    }
+                }
+            }
+
+            $groups[] = $group;
+        }
+
+        return $groups;
+    }
+
+    public function createSpecial(array $group): array
+    {
+        $size = count($group);
+        $pos = $group[array_key_first($group)];
+        [$r, $c] = $pos;
+
+        $type = match (true) {
+            $size >= 6 => self::HYPERCUBE,
+            $size >= 5 => self::BOMB,
+            default => $this->determineStripedDirection($group),
+        };
+
+        $this->special[$r][$c] = $type;
+
+        return [$r, $c];
+    }
+
+    private function determineStripedDirection(array $group): int
+    {
+        $rows = array_unique(array_map(fn(array $p): int => $p[0], $group));
+        return count($rows) === 1 ? self::STRIPED_H : self::STRIPED_V;
+    }
+
+    public function activateSpecial(int $r, int $c): array
+    {
+        $type = $this->special[$r][$c];
+
+        if ($type === self::NONE) {
+            return [];
+        }
+
+        $this->special[$r][$c] = self::NONE;
+        $cleared = [];
+        $gem = $this->grid[$r][$c];
+
+        if ($type === self::STRIPED_H) {
+            for ($col = 0; $col < self::COLS; $col++) {
+                $cleared["$r,$col"] = [$r, $col];
+            }
+        } elseif ($type === self::STRIPED_V) {
+            for ($row = 0; $row < self::ROWS; $row++) {
+                $cleared["$row,$c"] = [$row, $c];
+            }
+        } elseif ($type === self::BOMB) {
+            for ($dr = -1; $dr <= 1; $dr++) {
+                for ($dc = -1; $dc <= 1; $dc++) {
+                    $nr = $r + $dr;
+                    $nc = $c + $dc;
+                    if ($nr >= 0 && $nr < self::ROWS && $nc >= 0 && $nc < self::COLS) {
+                        $cleared["$nr,$nc"] = [$nr, $nc];
+                    }
+                }
+            }
+        } elseif ($type === self::HYPERCUBE) {
+            for ($row = 0; $row < self::ROWS; $row++) {
+                for ($col = 0; $col < self::COLS; $col++) {
+                    if ($this->grid[$row][$col] === $gem) {
+                        $cleared["$row,$col"] = [$row, $col];
+                    }
+                }
+            }
+        }
+
+        return array_values($cleared);
+    }
+
+    public function removeCells(array $positions): void
+    {
+        foreach ($positions as [$r, $c]) {
+            $this->grid[$r][$c] = -1;
+            $this->special[$r][$c] = self::NONE;
         }
     }
 
@@ -182,5 +366,9 @@ class Grid
         $temp = $this->grid[$r1][$c1];
         $this->grid[$r1][$c1] = $this->grid[$r2][$c2];
         $this->grid[$r2][$c2] = $temp;
+
+        $tempSp = $this->special[$r1][$c1];
+        $this->special[$r1][$c1] = $this->special[$r2][$c2];
+        $this->special[$r2][$c2] = $tempSp;
     }
 }

@@ -86,6 +86,19 @@ Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hi
 
 Each cascade step doubles the points (step 1 = ×1, step 2 = ×2, step 3 = ×4, …).
 
+### Special gems
+
+Matches of 4+ create special gems that stay on the board after clearing.
+
+| Match | Creates | Appearance | Effect when matched again |
+|---|---|---|---|
+| 4 in a row | **Striped** | Underlined gem | Clears entire row or column |
+| 5 in a row | **Bomb** | Bold gem | Clears 3×3 area |
+| 6+ in a row | **Hypercube** | ✦ symbol | Swap with any gem to clear all of that colour |
+
+Striped direction (horizontal vs vertical) matches the line that spawned it.
+Hypercubes activate on swap rather than match — swap with an adjacent gem to clear every gem of that type on the board.
+
 ## Development
 
 ```bash

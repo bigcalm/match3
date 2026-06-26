@@ -334,21 +334,79 @@ class Game
                 break;
             }
 
-            $stepScore = $this->scoreMatches($matches);
+            $allCells = [];
+            $set = [];
+
+            foreach ($matches as $pos) {
+                $key = "{$pos[0]},{$pos[1]}";
+                $allCells[$key] = $pos;
+                $set[$key] = true;
+            }
+
+            $activated = [];
+
+            foreach ($matches as [$r, $c]) {
+                $sp = $this->grid->getSpecial($r, $c);
+                if ($sp !== Grid::NONE) {
+                    $extra = $this->grid->activateSpecial($r, $c);
+                    foreach ($extra as $ep) {
+                        $ek = "{$ep[0]},{$ep[1]}";
+                        if (!isset($set[$ek])) {
+                            $allCells[$ek] = $ep;
+                            $set[$ek] = true;
+                            $activated[] = $ep;
+                        }
+                    }
+                }
+            }
+
+            $origGroups = $this->grid->groupMatches($matches);
+            $keep = [];
+
+            foreach ($origGroups as $group) {
+                $size = count($group);
+                if ($size >= 4) {
+                    $pos = $this->grid->createSpecial($group);
+                    $keep[] = $pos;
+                }
+            }
+
+            $stepScore = $this->scoreMatches(array_values($allCells));
             $multiplier = 1 << $cascadeStep;
             $this->score += $stepScore * $multiplier;
 
+            $flashCells = array_merge($matches, $activated);
             $hud = $this->buildHud();
             $footer = $this->buildFooter();
 
             for ($i = 0; $i < 3; $i++) {
-                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $matches, $hud, $footer);
+                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
                 usleep(100000);
                 echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
                 usleep(100000);
             }
 
-            $this->grid->removeMatches();
+            $keepMap = [];
+            foreach ($keep as [$kr, $kc]) {
+                $keepMap["$kr,$kc"] = true;
+            }
+
+            $toClear = [];
+
+            foreach ($matches as [$mr, $mc]) {
+                if (!isset($keepMap["$mr,$mc"])) {
+                    $toClear["$mr,$mc"] = [$mr, $mc];
+                }
+            }
+
+            foreach ($activated as $ap) {
+                $ak = "{$ap[0]},{$ap[1]}";
+                if (!isset($keepMap[$ak]) && !isset($toClear[$ak])) {
+                    $toClear[$ak] = $ap;
+                }
+            }
+
+            $this->grid->removeCells(array_values($toClear));
             $this->grid->applyGravity();
             $cascadeStep++;
         } while (true);

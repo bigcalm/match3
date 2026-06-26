@@ -167,4 +167,102 @@ class GridTest extends TestCase
         $grid = new Grid(5);
         $this->assertTrue($grid->hasValidMoves());
     }
+
+    public function testCreateStripedFromFourMatch(): void
+    {
+        $grid = new Grid(7);
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+        $grid->setCell(0, 0, 1);
+        $grid->setCell(0, 1, 1);
+        $grid->setCell(0, 2, 1);
+        $grid->setCell(0, 3, 1);
+        $group = [[0, 0], [0, 1], [0, 2], [0, 3]];
+        $pos = $grid->createSpecial($group);
+        $this->assertSame(Grid::STRIPED_H, $grid->getSpecial($pos[0], $pos[1]));
+    }
+
+    public function testCreateBombFromFiveMatch(): void
+    {
+        $grid = new Grid(7);
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+        $group = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4]];
+        $pos = $grid->createSpecial($group);
+        $this->assertSame(Grid::BOMB, $grid->getSpecial($pos[0], $pos[1]));
+    }
+
+    public function testCreateHypercubeFromSixMatch(): void
+    {
+        $grid = new Grid(7);
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+                $grid->setSpecial($r, $c, Grid::NONE);
+            }
+        }
+        $group = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5]];
+        $pos = $grid->createSpecial($group);
+        $this->assertSame(Grid::HYPERCUBE, $grid->getSpecial($pos[0], $pos[1]));
+    }
+
+    public function testActivateStripedHorizontalClearsRow(): void
+    {
+        $grid = new Grid(7);
+        $this->fillNoMatch($grid);
+        $grid->setCell(3, 4, 1);
+        $grid->setSpecial(3, 4, Grid::STRIPED_H);
+        $cleared = $grid->activateSpecial(3, 4);
+        $this->assertCount(Grid::COLS, $cleared);
+        $this->assertSame(Grid::NONE, $grid->getSpecial(3, 4));
+    }
+
+    public function testActivateBombClears3x3(): void
+    {
+        $grid = new Grid(7);
+        $this->fillNoMatch($grid);
+        $grid->setCell(4, 4, 1);
+        $grid->setSpecial(4, 4, Grid::BOMB);
+        $cleared = $grid->activateSpecial(4, 4);
+        $this->assertCount(9, $cleared);
+    }
+
+    public function testActivateBombAtCornerIsClamped(): void
+    {
+        $grid = new Grid(7);
+        $this->fillNoMatch($grid);
+        $grid->setCell(0, 0, 1);
+        $grid->setSpecial(0, 0, Grid::BOMB);
+        $cleared = $grid->activateSpecial(0, 0);
+        $this->assertCount(4, $cleared);
+    }
+
+    public function testSpecialSurvivesGravity(): void
+    {
+        $grid = new Grid(7);
+        $this->fillNoMatch($grid);
+        $grid->setCell(0, 0, 1);
+        $grid->setCell(1, 0, 1);
+        $grid->setCell(2, 0, 2);
+        $grid->setSpecial(0, 0, Grid::BOMB);
+        $grid->removeMatches();
+        $grid->setCell(6, 0, -1);
+        $grid->applyGravity();
+        $this->assertSame(Grid::BOMB, $grid->getSpecial(1, 0));
+    }
+
+    public function testGroupMatchesSeparatesDisconnectedGroups(): void
+    {
+        $grid = new Grid(7);
+        $groups = $grid->groupMatches([[0, 0], [0, 1], [0, 2], [5, 5], [5, 6], [5, 7]]);
+        $this->assertCount(2, $groups);
+    }
 }

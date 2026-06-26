@@ -11,6 +11,34 @@ class Renderer
 
     private const array COLORS = [31, 32, 33, 34, 35, 36, 37, 90];
 
+    private function gemStyle(int $gem, int $special, int $color, bool $highlight, bool $cursor, bool $selected): string
+    {
+        $symbol = self::GEMS[$gem];
+
+        if ($special === Grid::HYPERCUBE) {
+            $symbol = '✦';
+        }
+
+        $ansi = '';
+
+        if ($highlight) {
+            $ansi .= "\e[1m\e[7m";
+        } elseif ($cursor) {
+            $ansi .= "\e[7m";
+        } elseif ($selected) {
+            $ansi .= "\e[4m";
+        }
+
+        if ($special === Grid::STRIPED_H || $special === Grid::STRIPED_V) {
+            $ansi .= "\e[4m";
+        } elseif ($special === Grid::BOMB) {
+            $ansi .= "\e[1m";
+        }
+
+        $ansi .= "\e[{$color}m{$symbol}\e[0m";
+        return " {$ansi} │";
+    }
+
     public function render(
         Grid $grid,
         int $cursorRow = 0,
@@ -38,17 +66,15 @@ class Renderer
             for ($c = 0; $c < Grid::COLS; $c++) {
                 $gem = $grid->getCell($r, $c);
                 $color = self::COLORS[$gem];
-                $symbol = self::GEMS[$gem];
 
-                if (isset($highlightSet["$r,$c"])) {
-                    $out .= " \e[1m\e[7m\e[{$color}m{$symbol}\e[0m │";
-                } elseif ($r === $cursorRow && $c === $cursorCol) {
-                    $out .= " \e[7m\e[{$color}m{$symbol}\e[0m │";
-                } elseif ($r === $selectedRow && $c === $selectedCol) {
-                    $out .= " \e[4m\e[{$color}m{$symbol}\e[0m │";
-                } else {
-                    $out .= " \e[{$color}m{$symbol}\e[0m │";
-                }
+                $out .= $this->gemStyle(
+                    $gem,
+                    $grid->getSpecial($r, $c),
+                    $color,
+                    isset($highlightSet["$r,$c"]),
+                    $r === $cursorRow && $c === $cursorCol,
+                    $r === $selectedRow && $c === $selectedCol,
+                );
             }
             $out .= "\n";
             if ($r < Grid::ROWS - 1) {

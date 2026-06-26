@@ -208,7 +208,7 @@ User writes a JSON config file mapping key names or byte sequences to actions:
 - [x] Graceful terminal restore on interrupt.
 
 ### Phase 7 — Optional Enhancements
-- [ ] Special gems (bomb, hypercube, striped).
+- [x] Special gems (bomb, hypercube, striped).
 - [x] Timer mode vs. move-limited mode.
 - [x] Leaderboard (save to file, mode-split boards).
 - [ ] Sound effects via terminal bell (`\a`).

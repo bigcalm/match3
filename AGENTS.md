@@ -36,7 +36,7 @@ A terminal-based Match-3 puzzle game (Bejeweled/Candy Crush style) written in PH
 
 | Class | Responsibility |
 |---|---|
-| `Grid` | 2D gem array, random fill, swap, match detection, cascade, `hasValidMoves()` |
+| `Grid` | 2D gem array, random fill, swap, match detection, cascade, `hasValidMoves()`, special gem creation/activation (striped, bomb, hypercube) |
 | `Renderer` | Frame redraw via ANSI escapes, double-buffered string, cursor overlay |
 | `Input` | Raw `fread(STDIN, …)` loop, `readRawKey()` for raw bytes, delegates to `KeyBindings`, optional non-blocking `stream_select` timeout |
 | `KeyBindings` | Loads preset or custom JSON map, `getAction(bytes) → string` |
@@ -84,6 +84,8 @@ bin/play
 
 - Scan each row for runs ≥ 3, then each column. Collect into a set (overlapping runs OK).
 - Remove matched cells, shift columns down, fill top with random gems, repeat until stable.
+- Matches of 4+ create special gems at one position (striped for 4, bomb for 5, hypercube for 6+).
+- Special gems that fall into a match activate their effect (clear row/column, blast area, or clear all of a colour).
 
 ### Levels
 
