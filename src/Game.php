@@ -70,6 +70,11 @@ class Game
                 continue;
             }
 
+            if ($action === 'leaderboard') {
+                $this->handleLeaderboard();
+                continue;
+            }
+
             match ($action) {
                 'up' => $this->cursorRow = max(0, $this->cursorRow - 1),
                 'down' => $this->cursorRow = min(Grid::ROWS - 1, $this->cursorRow + 1),
@@ -183,6 +188,19 @@ class Game
         $footer = $this->buildFooter();
         echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud, $footer);
         usleep(400000);
+    }
+
+    private function handleLeaderboard(): void
+    {
+        $board = new HighScoreBoard();
+        echo "\e[2J\e[H" . $board->render() . "\nPress any key to return...\n";
+
+        while (true) {
+            $action = $this->input->getAction();
+            if ($action !== null) {
+                break;
+            }
+        }
     }
 
     private function attemptSwap(int $r1, int $c1, int $r2, int $c2): void

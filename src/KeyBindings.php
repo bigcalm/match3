@@ -16,6 +16,7 @@ class KeyBindings
             "\e" => 'quit',
             'h' => 'hint',
             '?' => 'hint',
+            'b' => 'leaderboard',
         ],
         'wasd' => [
             'w' => 'up',
@@ -29,6 +30,7 @@ class KeyBindings
             "\e" => 'quit',
             'h' => 'hint',
             '?' => 'hint',
+            'b' => 'leaderboard',
         ],
         'hjkl' => [
             'k' => 'up',
@@ -41,6 +43,7 @@ class KeyBindings
             'q' => 'quit',
             "\e" => 'quit',
             '?' => 'hint',
+            'b' => 'leaderboard',
         ],
     ];
 

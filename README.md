@@ -47,6 +47,7 @@ php bin/play --bindings=my_keys.json
 | Select / swap | `Space` | `Space` / `F` | `Space` / `F` |
 | Confirm | `Enter` | `Enter` | `Enter` |
 | Hint | `H` / `?` | `H` / `?` | `?` |
+| Leaderboard | `B` | `B` | `B` |
 | Quit | `Q` / `Escape` | `Q` / `Escape` | `Q` / `Escape` |
 
 You can also click gems with the mouse.
@@ -64,7 +65,7 @@ Create a JSON file mapping key names or byte sequences to actions:
 ```
 
 Recognised key names: `up`, `down`, `left`, `right`, `space`, `enter`, `escape`, `tab`, or any single character.
-Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hint`, `cancel`.
+Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hint`, `leaderboard`, `cancel`.
 
 ## Rules
 
@@ -113,7 +114,8 @@ tests/
 ├── KeyBindingsTest.php
 └── LevelTest.php
 bin/
-└── play                  # Entry point (CLI arg parsing, restart loop)
+├── play                  # Entry point (CLI arg parsing, restart loop)
+└── leaderboard           # Standalone high score viewer
 ```
 
 ## License
