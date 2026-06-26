@@ -129,6 +129,27 @@ class GridTest extends TestCase
         $this->assertNotSame(-1, $grid->getCell(7, 0));
     }
 
+    public function testFindHintReturnsValidPair(): void
+    {
+        $grid = new Grid();
+        $hint = $grid->findHint();
+        $this->assertNotNull($hint);
+        $this->assertCount(2, $hint);
+        [$a, $b] = $hint;
+        $this->assertCount(2, $a);
+        $this->assertCount(2, $b);
+        $adjacent = abs($a[0] - $b[0]) + abs($a[1] - $b[1]);
+        $this->assertSame(1, $adjacent);
+    }
+
+    public function testFindHintOnNoMatchGrid(): void
+    {
+        $grid = new Grid(7);
+        $this->fillNoMatch($grid);
+        $hint = $grid->findHint();
+        $this->assertNull($hint);
+    }
+
     public function testHasValidMovesOnRandomGrid(): void
     {
         $grid = new Grid();

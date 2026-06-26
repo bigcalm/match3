@@ -149,19 +149,24 @@ class Grid
 
     public function hasValidMoves(): bool
     {
+        return $this->findHint() !== null;
+    }
+
+    public function findHint(): ?array
+    {
         for ($r = 0; $r < self::ROWS; $r++) {
             for ($c = 0; $c < self::COLS; $c++) {
                 if ($c + 1 < self::COLS && $this->swapWouldMatch($r, $c, $r, $c + 1)) {
-                    return true;
+                    return [[$r, $c], [$r, $c + 1]];
                 }
 
                 if ($r + 1 < self::ROWS && $this->swapWouldMatch($r, $c, $r + 1, $c)) {
-                    return true;
+                    return [[$r, $c], [$r + 1, $c]];
                 }
             }
         }
 
-        return false;
+        return null;
     }
 
     private function swapWouldMatch(int $r1, int $c1, int $r2, int $c2): bool

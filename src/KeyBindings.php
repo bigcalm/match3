@@ -14,6 +14,8 @@ class KeyBindings
             "\n" => 'confirm',
             'q' => 'quit',
             "\e" => 'quit',
+            'h' => 'hint',
+            '?' => 'hint',
         ],
         'wasd' => [
             'w' => 'up',
@@ -25,6 +27,8 @@ class KeyBindings
             "\n" => 'confirm',
             'q' => 'quit',
             "\e" => 'quit',
+            'h' => 'hint',
+            '?' => 'hint',
         ],
         'hjkl' => [
             'k' => 'up',
@@ -36,6 +40,7 @@ class KeyBindings
             "\n" => 'confirm',
             'q' => 'quit',
             "\e" => 'quit',
+            '?' => 'hint',
         ],
     ];
 

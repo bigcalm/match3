@@ -56,6 +56,11 @@ class Game
                 continue;
             }
 
+            if ($action === 'hint') {
+                $this->handleHint();
+                continue;
+            }
+
             match ($action) {
                 'up' => $this->cursorRow = max(0, $this->cursorRow - 1),
                 'down' => $this->cursorRow = min(Grid::ROWS - 1, $this->cursorRow + 1),
@@ -142,6 +147,19 @@ class Game
         $this->attemptSwap($this->selRow, $this->selCol, $this->cursorRow, $this->cursorCol);
         $this->selRow = -1;
         $this->selCol = -1;
+    }
+
+    private function handleHint(): void
+    {
+        $hint = $this->grid->findHint();
+
+        if ($hint === null) {
+            return;
+        }
+
+        $hud = $this->buildHud();
+        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud);
+        usleep(400000);
     }
 
     private function attemptSwap(int $r1, int $c1, int $r2, int $c2): void
