@@ -168,6 +168,12 @@ class GridTest extends TestCase
         $this->assertTrue($grid->hasValidMoves());
     }
 
+    public function testResolveWithTwoGemTypesProducesMatchFreeGrid(): void
+    {
+        $grid = new Grid(2);
+        $this->assertEmpty($grid->findMatches());
+    }
+
     public function testCreateStripedFromFourMatch(): void
     {
         $grid = new Grid(7);

@@ -37,9 +37,57 @@ class Grid
 
     private function resolvePreExistingMatches(): void
     {
-        while ($matches = $this->findMatches()) {
+        $maxIterations = 100;
+
+        for ($i = 0; $i < $maxIterations; $i++) {
+            $matches = $this->findMatches();
+
+            if (empty($matches)) {
+                return;
+            }
+
             foreach ($matches as [$r, $c]) {
                 $this->grid[$r][$c] = random_int(0, $this->gemTypes - 1);
+            }
+        }
+
+        $this->fillWithoutMatches();
+
+        if (!empty($this->findMatches())) {
+            $this->fillAlternating();
+        }
+    }
+
+    private function fillWithoutMatches(): void
+    {
+        for ($r = 0; $r < self::ROWS; $r++) {
+            for ($c = 0; $c < self::COLS; $c++) {
+                $original = $this->grid[$r][$c];
+
+                for ($try = 0; $try < $this->gemTypes; $try++) {
+                    $this->grid[$r][$c] = ($original + $try) % $this->gemTypes;
+
+                    $hasHorizontal = $c >= 2
+                        && $this->grid[$r][$c] === $this->grid[$r][$c - 1]
+                        && $this->grid[$r][$c] === $this->grid[$r][$c - 2];
+
+                    $hasVertical = $r >= 2
+                        && $this->grid[$r][$c] === $this->grid[$r - 1][$c]
+                        && $this->grid[$r][$c] === $this->grid[$r - 2][$c];
+
+                    if (!$hasHorizontal && !$hasVertical) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private function fillAlternating(): void
+    {
+        for ($r = 0; $r < self::ROWS; $r++) {
+            for ($c = 0; $c < self::COLS; $c++) {
+                $this->grid[$r][$c] = ($r + $c) % max(2, $this->gemTypes);
             }
         }
     }
