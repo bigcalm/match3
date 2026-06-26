@@ -6,12 +6,13 @@ class Grid
 {
     public const ROWS = 8;
     public const COLS = 8;
-    public const GEM_TYPES = 7;
 
+    private int $gemTypes;
     private array $grid = [];
 
-    public function __construct()
+    public function __construct(int $gemTypes = 7)
     {
+        $this->gemTypes = $gemTypes;
         $this->fillRandom();
     }
 
@@ -19,7 +20,7 @@ class Grid
     {
         for ($r = 0; $r < self::ROWS; $r++) {
             for ($c = 0; $c < self::COLS; $c++) {
-                $this->grid[$r][$c] = random_int(0, self::GEM_TYPES - 1);
+                $this->grid[$r][$c] = random_int(0, $this->gemTypes - 1);
             }
         }
 
@@ -30,7 +31,7 @@ class Grid
     {
         while ($matches = $this->findMatches()) {
             foreach ($matches as [$r, $c]) {
-                $this->grid[$r][$c] = random_int(0, self::GEM_TYPES - 1);
+                $this->grid[$r][$c] = random_int(0, $this->gemTypes - 1);
             }
         }
     }
@@ -128,7 +129,7 @@ class Grid
             }
 
             for ($r = $write; $r >= 0; $r--) {
-                $this->grid[$r][$c] = random_int(0, self::GEM_TYPES - 1);
+                $this->grid[$r][$c] = random_int(0, $this->gemTypes - 1);
             }
         }
     }
@@ -144,6 +145,31 @@ class Grid
         }
 
         return $steps;
+    }
+
+    public function hasValidMoves(): bool
+    {
+        for ($r = 0; $r < self::ROWS; $r++) {
+            for ($c = 0; $c < self::COLS; $c++) {
+                if ($c + 1 < self::COLS && $this->swapWouldMatch($r, $c, $r, $c + 1)) {
+                    return true;
+                }
+
+                if ($r + 1 < self::ROWS && $this->swapWouldMatch($r, $c, $r + 1, $c)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private function swapWouldMatch(int $r1, int $c1, int $r2, int $c2): bool
+    {
+        $this->swapCells($r1, $c1, $r2, $c2);
+        $hasMatch = !empty($this->findMatches());
+        $this->swapCells($r1, $c1, $r2, $c2);
+        return $hasMatch;
     }
 
     private function swapCells(int $r1, int $c1, int $r2, int $c2): void

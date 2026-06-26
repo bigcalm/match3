@@ -4,6 +4,9 @@ namespace Match3;
 
 class Renderer
 {
+    /** Number of HUD lines rendered above the grid. */
+    public const int HUD_LINES = 4;
+
     private const array GEMS = ['♦', '♥', '♣', '♠', '●', '▲', '◆', '★'];
 
     private const array COLORS = [31, 32, 33, 34, 35, 36, 37, 90];
@@ -15,6 +18,7 @@ class Renderer
         int $selectedRow = -1,
         int $selectedCol = -1,
         array $highlights = [],
+        array $hud = [],
     ): string {
         $highlightSet = [];
 
@@ -23,6 +27,8 @@ class Renderer
         }
 
         $out = "\e[H\e[J";
+
+        $out .= $this->renderHud($hud);
 
         $out .= $this->border('┌', '┐', '┬') . "\n";
 
@@ -50,6 +56,34 @@ class Renderer
         }
 
         $out .= $this->border('└', '┘', '┴') . "\n";
+
+        return $out;
+    }
+
+    private function renderHud(array $hud): string
+    {
+        $level = $hud['level'] ?? 1;
+        $score = $hud['score'] ?? 0;
+        $scoreGoal = $hud['scoreGoal'] ?? 0;
+        $movesLeft = $hud['movesLeft'] ?? 0;
+        $movesTotal = $hud['movesTotal'] ?? 0;
+        $validMoves = $hud['validMoves'] ?? 0;
+        $invalidMoves = $hud['invalidMoves'] ?? 0;
+
+        $out = '';
+
+        $out .= sprintf(" Level %-3d               Score: %d/%d\n", $level, $score, $scoreGoal);
+        $out .= sprintf(" Moves: %d/%-10d   Valid: %d  Invalid: %d\n", $movesLeft, $movesTotal, $validMoves, $invalidMoves);
+
+        if ($scoreGoal > 0) {
+            $pct = min(1.0, $score / $scoreGoal);
+            $barWidth = 20;
+            $filled = (int) round($pct * $barWidth);
+            $bar = str_repeat('▓', $filled) . str_repeat('░', $barWidth - $filled);
+            $out .= sprintf(" Goal: Score          %s  %d/%d\n", $bar, $score, $scoreGoal);
+        }
+
+        $out .= "\n";
 
         return $out;
     }
