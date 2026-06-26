@@ -3,263 +3,37 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Match3\Grid;
+use Match3\Game;
 use Match3\HighScoreBoard;
 use Match3\Input;
-use Match3\KeyBindings;
-use Match3\Level;
-use Match3\Renderer;
 
 register_shutdown_function([Input::class, 'restoreTerminal']);
 
-$renderer = new Renderer();
-$bindings = new KeyBindings('arrows');
 $board = new HighScoreBoard();
-
-function buildHud(Level $level, int $score, int $movesUsed, int $validMoves, int $invalidMoves): array
-{
-    return [
-        'level' => $level->getNumber(),
-        'score' => $score,
-        'scoreGoal' => $level->getGoalTarget(0),
-        'movesLeft' => $level->getMoveLimit() - $movesUsed,
-        'movesTotal' => $level->getMoveLimit(),
-        'validMoves' => $validMoves,
-        'invalidMoves' => $invalidMoves,
-    ];
-}
-
-function scoreMatches(array $matches): int
-{
-    $set = [];
-
-    foreach ($matches as [$r, $c]) {
-        $set["$r,$c"] = true;
-    }
-
-    $visited = [];
-    $total = 0;
-
-    foreach ($matches as [$r, $c]) {
-        if (isset($visited["$r,$c"])) {
-            continue;
-        }
-
-        $queue = [[$r, $c]];
-        $visited["$r,$c"] = true;
-        $size = 0;
-
-        while (!empty($queue)) {
-            [$cr, $cc] = array_shift($queue);
-            $size++;
-
-            foreach ([[-1, 0], [1, 0], [0, -1], [0, 1]] as [$dr, $dc]) {
-                $nr = $cr + $dr;
-                $nc = $cc + $dc;
-
-                if (isset($set["$nr,$nc"]) && !isset($visited["$nr,$nc"])) {
-                    $visited["$nr,$nc"] = true;
-                    $queue[] = [$nr, $nc];
-                }
-            }
-        }
-
-        $total += match (true) {
-            $size >= 5 => 100,
-            $size === 4 => 60,
-            default => 30,
-        };
-    }
-
-    return $total;
-}
-
-function processCascade(Grid $grid, int &$score): void
-{
-    global $renderer, $cursorRow, $cursorCol, $level, $movesUsed, $validMoves, $invalidMoves;
-
-    $cascadeStep = 0;
-
-    do {
-        $matches = $grid->findMatches();
-
-        if (empty($matches)) {
-            break;
-        }
-
-        $stepScore = scoreMatches($matches);
-        $multiplier = 1 << $cascadeStep;
-        $score += $stepScore * $multiplier;
-
-        $hud = buildHud($level, $score, $movesUsed, $validMoves, $invalidMoves);
-
-        for ($i = 0; $i < 3; $i++) {
-            echo $renderer->render($grid, $cursorRow, $cursorCol, -1, -1, $matches, $hud);
-            usleep(100000);
-            echo $renderer->render($grid, $cursorRow, $cursorCol, -1, -1, [], $hud);
-            usleep(100000);
-        }
-
-        $grid->removeMatches();
-        $grid->applyGravity();
-        $cascadeStep++;
-    } while (true);
-}
-
-function handleClick(
-    string $action,
-    int &$cursorRow,
-    int &$cursorCol,
-    int &$selRow,
-    int &$selCol,
-    Grid $grid,
-): void {
-    $parts = explode(':', $action);
-    $termCol = (int) ($parts[1] ?? 0);
-    $termRow = (int) ($parts[2] ?? 0);
-
-    $col = intdiv($termCol - 2, 4);
-    $row = intdiv($termRow - (2 + Renderer::HUD_LINES), 2);
-
-    if ($row < 0 || $row >= Grid::ROWS || $col < 0 || $col >= Grid::COLS) {
-        return;
-    }
-
-    $cursorRow = $row;
-    $cursorCol = $col;
-
-    if ($selRow === -1) {
-        $selRow = $row;
-        $selCol = $col;
-        return;
-    }
-
-    if ($row === $selRow && $col === $selCol) {
-        $selRow = -1;
-        $selCol = -1;
-        return;
-    }
-
-    attemptSwap($grid, $selRow, $selCol, $cursorRow, $cursorCol);
-    $selRow = -1;
-    $selCol = -1;
-}
-
-function attemptSwap(Grid $grid, int $r1, int $c1, int $r2, int $c2): void
-{
-    global $renderer, $cursorRow, $cursorCol, $score, $validMoves, $invalidMoves, $movesUsed, $gameOver, $level;
-
-    if ($gameOver) {
-        return;
-    }
-
-    if (!$grid->swap($r1, $c1, $r2, $c2)) {
-        $invalidMoves++;
-        return;
-    }
-
-    $validMoves++;
-    $movesUsed++;
-
-    processCascade($grid, $score);
-
-    if ($level->isComplete(['score' => $score])) {
-        $next = $level->next();
-
-        if ($next !== null) {
-            $level = $next;
-            $movesUsed = 0;
-        } else {
-            $gameOver = true;
-        }
-    } elseif ($movesUsed >= $level->getMoveLimit() || !$grid->hasValidMoves()) {
-        $gameOver = true;
-    }
-}
 
 do {
     Input::enableRawMode();
     Input::enableMouseTracking();
 
-    $input = new Input($bindings);
-
-    $level = new Level(1);
-    $grid = new Grid($level->getGemTypes());
-
-    $cursorRow = 0;
-    $cursorCol = 0;
-    $selRow = -1;
-    $selCol = -1;
-    $score = 0;
-    $validMoves = 0;
-    $invalidMoves = 0;
-    $movesUsed = 0;
-    $gameOver = false;
-
-    while (true) {
-        $hud = buildHud($level, $score, $movesUsed, $validMoves, $invalidMoves);
-        echo $renderer->render($grid, $cursorRow, $cursorCol, $selRow, $selCol, [], $hud);
-
-        if ($gameOver) {
-            break;
-        }
-
-        $action = $input->getAction();
-
-        if ($action === null) {
-            continue;
-        }
-
-        if ($action === 'quit') {
-            Input::restoreTerminal();
-            exit;
-        }
-
-        if (str_starts_with($action, 'click:')) {
-            handleClick($action, $cursorRow, $cursorCol, $selRow, $selCol, $grid);
-            continue;
-        }
-
-        if ($action === 'select') {
-            if ($selRow === -1) {
-                $selRow = $cursorRow;
-                $selCol = $cursorCol;
-            } elseif ($cursorRow === $selRow && $cursorCol === $selCol) {
-                $selRow = -1;
-                $selCol = -1;
-            } elseif (abs($cursorRow - $selRow) + abs($cursorCol - $selCol) === 1) {
-                attemptSwap($grid, $selRow, $selCol, $cursorRow, $cursorCol);
-                $selRow = -1;
-                $selCol = -1;
-            } else {
-                $selRow = $cursorRow;
-                $selCol = $cursorCol;
-            }
-
-            continue;
-        }
-
-        match ($action) {
-            'up' => $cursorRow = max(0, $cursorRow - 1),
-            'down' => $cursorRow = min(Grid::ROWS - 1, $cursorRow + 1),
-            'left' => $cursorCol = max(0, $cursorCol - 1),
-            'right' => $cursorCol = min(Grid::COLS - 1, $cursorCol + 1),
-            default => null,
-        };
-    }
+    $game = new Game();
+    $result = $game->run();
 
     Input::restoreTerminal();
 
-    echo "\e[2J\e[H";
-
-    if ($level->isComplete(['score' => $score])) {
-        echo "You win! Final score: $score\n";
-    } else {
-        echo "Game over! Score: $score  (Reached level {$level->getNumber()})\n";
+    if (empty($result)) {
+        break;
     }
 
-    if ($board->isHighScore($score)) {
-        echo "New high score: $score!\n";
+    echo "\e[2J\e[H";
+
+    if ($result['won']) {
+        echo "You win! Final score: {$result['score']}\n";
+    } else {
+        echo "Game over! Score: {$result['score']}  (Reached level {$result['level']})\n";
+    }
+
+    if ($board->isHighScore($result['score'])) {
+        echo "New high score: {$result['score']}!\n";
         echo "Enter your name: ";
         $name = trim(fgets(STDIN));
 
@@ -267,7 +41,7 @@ do {
             $name = 'Anonymous';
         }
 
-        $board->add($name, $score, $level->getNumber(), $validMoves, $invalidMoves);
+        $board->add($name, $result['score'], $result['level'], $result['validMoves'], $result['invalidMoves']);
     }
 
     echo "\n" . $board->render();
