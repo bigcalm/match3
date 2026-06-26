@@ -22,26 +22,24 @@ composer install
 php bin/play
 ```
 
-### Command-line options
+On launch you'll see a welcome screen where you can:
 
-| Option | Description |
+| Setting | Options | Change with |
 |---|---|---|
-| `--preset=wasd` | Key binding preset: `arrows`, `wasd`, `hjkl` (default: `arrows`) |
-| `--bindings=path.json` | Load custom key bindings from a JSON file |
-| `--mode=timer` | Game mode: `moves` (default) or `timer`. Timer mode gives each level a time limit instead of a move limit |
+| Game mode | `moves` (default) or `timer` | `←` `→` |
+| Key preset | `arrows`, `wasd`, `hjkl` | `←` `→` |
+| Start / Leaderboard / Quit | select with `↑` `↓` + `Enter` |
 
-Examples:
+### Welcome screen
 
-```bash
-php bin/play --preset=wasd
-php bin/play --preset=hjkl
-php bin/play --bindings=my_keys.json
-php bin/play --mode=timer --preset=wasd
-```
+| Action | Key |
+|---|---|
+| Navigate | `↑` `↓` |
+| Change value | `←` `→` |
+| Select | `Enter` |
+| Quit | `Q` / `Escape` |
 
-## How to play
-
-### Controls
+### In-game controls
 
 | Action | arrows | wasd | hjkl |
 |---|---|---|---|
@@ -76,7 +74,7 @@ Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hi
 - Each level has a **score goal**. Reach it within the limit (moves or time) to advance.
 - **20 levels** with increasing difficulty (fewer gem types, higher targets, fewer moves).
 - **Running out of valid moves** or **exceeding the move/time limit** ends the game.
-- **High scores** are saved to `data/high_scores.json`. Tie-breaker: fewer invalid moves ranks higher.
+- **High scores** are saved to `data/high_scores.json`, split into separate boards for moves mode and timer mode. Tie-breaker: fewer invalid moves ranks higher.
 
 ### Scoring
 
@@ -93,7 +91,7 @@ Each cascade step doubles the points (step 1 = ×1, step 2 = ×2, step 3 = ×4, 
 ```bash
 composer install           # Install dependencies (dev included)
 php -l src/                # Lint all source files
-./vendor/bin/phpunit       # Run tests (58 tests, PHPUnit 13)
+./vendor/bin/phpunit       # Run tests (61 tests, PHPUnit 13)
 ```
 
 ## Project structure
@@ -102,11 +100,12 @@ php -l src/                # Lint all source files
 src/
 ├── Game.php              # Main loop and state machine
 ├── Grid.php              # Gem grid, match detection, cascade, hints
-├── HighScoreBoard.php    # Persistent high scores (JSON)
+├── HighScoreBoard.php    # Persistent high scores (JSON, split by mode)
 ├── Input.php             # Raw terminal input, mouse tracking
 ├── KeyBindings.php       # Key binding presets and custom maps
-├── Level.php             # 20-level table with goals and move limits
-└── Renderer.php          # ANSI frame rendering, HUD, controls footer
+├── Level.php             # 20-level table with goals, move and time limits
+├── Renderer.php          # ANSI frame rendering, HUD, controls footer
+└── WelcomeScreen.php     # Interactive menu for mode and preset selection
 data/
 └── high_scores.json      # Persisted high scores
 tests/
@@ -116,7 +115,7 @@ tests/
 ├── KeyBindingsTest.php
 └── LevelTest.php
 bin/
-├── play                  # Entry point (CLI arg parsing, restart loop)
+├── play                  # Entry point (welcome screen + game loop)
 └── leaderboard           # Standalone high score viewer
 ```
 

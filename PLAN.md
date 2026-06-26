@@ -171,46 +171,46 @@ User writes a JSON config file mapping key names or byte sequences to actions:
 ## 6. Implementation Phases
 
 ### Phase 1 — Skeleton
-- [ ] Set up project structure (composer.json, autoloading PSR-4).
-- [ ] Create `Grid` class with random fill + `getCell`/`setCell`.
-- [ ] Create `Renderer` that prints the grid as coloured text.
-- [ ] Run a single frame: render and exit.
+- [x] Set up project structure (composer.json, autoloading PSR-4).
+- [x] Create `Grid` class with random fill + `getCell`/`setCell`.
+- [x] Create `Renderer` that prints the grid as coloured text.
+- [x] Run a single frame: render and exit.
 
 ### Phase 2 — Input & Key Bindings
-- [ ] Implement raw terminal mode toggle.
-- [ ] Enable/disable mouse tracking (`\e[?1000h\e[?1006h` / `\e[?1000l\e[?1006l`).
-- [ ] `KeyBindings` class: load preset or custom JSON config; expose `getAction(bytes)` → action name.
-- [ ] `Input` class: reads raw bytes, passes to `KeyBindings::getAction()`, returns parsed action.
-- [ ] Parse mouse click SGR sequences (`\e[<btn>;<x>;<y>M`) and map to grid coordinates.
-- [ ] Overlay cursor on grid.
+- [x] Implement raw terminal mode toggle.
+- [x] Enable/disable mouse tracking (`\e[?1000h\e[?1006h` / `\e[?1000l\e[?1006l`).
+- [x] `KeyBindings` class: load preset or custom JSON config; expose `getAction(bytes)` → action name.
+- [x] `Input` class: reads raw bytes, passes to `KeyBindings::getAction()`, returns parsed action.
+- [x] Parse mouse click SGR sequences (`\e[<btn>;<x>;<y>M`) and map to grid coordinates.
+- [x] Overlay cursor on grid.
 
 ### Phase 3 — Swap & Match
-- [ ] Implement adjacency swap with validation.
-- [ ] Implement match detection (horizontal + vertical runs ≥ 3).
-- [ ] Animate/flash matched gems (optional delay).
+- [x] Implement adjacency swap with validation.
+- [x] Implement match detection (horizontal + vertical runs ≥ 3).
+- [x] Animate/flash matched gems.
 
 ### Phase 4 — Cascade
-- [ ] Implement gravity (gems fall).
-- [ ] Implement refill (new random gems at top).
-- [ ] Loop cascade until board is stable.
+- [x] Implement gravity (gems fall).
+- [x] Implement refill (new random gems at top).
+- [x] Loop cascade until board is stable.
 
 ### Phase 5 — Levels & Move Counters
-- [ ] `Level` class: load level definitions from a config array; expose `getGoals()`, `isComplete(state)`, `getMoveLimit()`.
-- [ ] Track valid and invalid moves in game state (`Game::$validMoves`, `Game::$invalidMoves`).
-- [ ] HUD display: goal progress bar, move counters, current level number.
-- [ ] Level-complete check after each cascade; advance to next level or trigger game-over.
-- [ ] Game-over: detect when no valid swaps remain (`Grid::hasValidMoves()`).
+- [x] `Level` class: load level definitions from a config array; expose `getGoals()`, `isComplete(state)`, `getMoveLimit()`.
+- [x] Track valid and invalid moves in game state (`Game::$validMoves`, `Game::$invalidMoves`).
+- [x] HUD display: goal progress bar, move counters, current level number.
+- [x] Level-complete check after each cascade; advance to next level or trigger game-over.
+- [x] Game-over: detect when no valid swaps remain (`Grid::hasValidMoves()`).
 
 ### Phase 6 — Polish
-- [ ] Score display and tracking.
-- [ ] High Score Board: load/save JSON, prompt for name on game-over, show top 10.
-- [ ] Restart / quit flow.
-- [ ] Graceful terminal restore on interrupt.
+- [x] Score display and tracking.
+- [x] High Score Board: load/save JSON, prompt for name on game-over, show top 10.
+- [x] Restart / quit flow.
+- [x] Graceful terminal restore on interrupt.
 
 ### Phase 7 — Optional Enhancements
 - [ ] Special gems (bomb, hypercube, striped).
-- [ ] Timer mode vs. move-limited mode.
-- [ ] Leaderboard (save to file).
+- [x] Timer mode vs. move-limited mode.
+- [x] Leaderboard (save to file, mode-split boards).
 - [ ] Sound effects via terminal bell (`\a`).
 
 ---
@@ -218,23 +218,28 @@ User writes a JSON config file mapping key names or byte sequences to actions:
 ## 7. Data Flow
 
 ```
-main()
-  └─ Game::run()
-       ├─ init: Grid::fillRandom(), Input::initRawMode(), load Level(1)
-       ├─ loop:
-       │   ├─ Renderer::draw(grid, cursor, score, validMoves, invalidMoves, level, goals)
-       │   ├─ Input::getAction() → (move, select, swap, click(x,y), quit)
-       │   ├─ on swap:
-       │   │   ├─ Grid::swap(r1,c1, r2,c2)
-       │   │   ├─ if Grid::findMatches():
-       │   │   │   ├─ validMoves++
-       │   │   │   ├─ cascade + score
-       │   │   │   ├─ update goal progress
-       │   │   │   └─ if goals met → Level::next() (advance)
-       │   │   └─ else: swap back, invalidMoves++
-       │   ├─ check game-over (no moves or move limit reached)
-       │   └─ on game-over: HighScoreBoard::save(name, score, ...)
-       └─ cleanup: Input::restoreTerminal()
+init: Grid::fillRandom(), Input::enableRawMode(), load Level(1)
+loop (timer mode: non-blocking 200ms poll):
+  Renderer::draw(grid, cursor, score, moves/time, level, goals)
+  Input::getAction() → action
+  on swap:
+    Grid::swap()
+    if Grid::findMatches(): validMoves++, cascade, score, check goals
+    else: swap back, invalidMoves++
+  check game-over (no moves, move limit hit, or time up)
+  on game-over: HighScoreBoard::save()
+cleanup: Input::restoreTerminal()
+```
+
+Startup flow:
+
+```
+bin/play
+  └─ Input::enableRawMode()
+  └─ WelcomeScreen::run()
+       ├─ [Start] → Game::play(preset, mode) → results → back to menu
+       ├─ [Leaderboard] → HighScoreBoard::renderAll() → back to menu
+       └─ [Quit] → exit
 ```
 
 ---
@@ -253,11 +258,13 @@ match3/
 │   ├── KeyBindings.php
 │   ├── Level.php
 │   ├── Renderer.php
+│   ├── WelcomeScreen.php  (interactive menu)
 │   └── Gem.php            (optional value object)
 ├── data/
-│   └── high_scores.json   (persisted high scores)
-└── bin/
-    └── play               # entry-point script
+│   └── high_scores.json   (persisted high scores, mode-split)
+├── bin/
+│   ├── play               # entry-point script
+│   └── leaderboard        # standalone high-score viewer
 ```
 
 ---
@@ -270,5 +277,6 @@ match3/
 - **PHP readline** — `readline()` blocks for a full line. For single-key input, you must bypass readline and use `fread(STDIN, 1)` on a raw terminal.
 - **Mouse** — SGR coordinates (mode 1006) are 1-based, grid rendering must account for any offset from status lines or borders. Dragging sends separate press/release events which can be used for a click-drag-release swap flow.
 - **Key binding conflicts** — certain multi-byte sequences can collide (e.g. `\e` alone vs `\e[A`). The parser needs a short timeout after receiving `\e` to disambiguate escape from the start of a sequence.
+- **Timer mode polling** — `Input::getAction(timeoutUs)` uses `stream_select` for non-blocking reads. The game loop polls every 200ms in timer mode to keep the countdown visible.
 - **Level balancing** — goal targets, gem-type counts, and move limits need play-testing to feel fair. Start generous and tighten per level.
 - **High score file** — `data/high_scores.json` could be deleted or corrupted; handle gracefully (start with empty board).

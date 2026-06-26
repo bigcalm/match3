@@ -38,26 +38,38 @@ A terminal-based Match-3 puzzle game (Bejeweled/Candy Crush style) written in PH
 |---|---|
 | `Grid` | 2D gem array, random fill, swap, match detection, cascade, `hasValidMoves()` |
 | `Renderer` | Frame redraw via ANSI escapes, double-buffered string, cursor overlay |
-| `Input` | Raw `fread(STDIN, …)` loop, delegates byte sequences to `KeyBindings` |
+| `Input` | Raw `fread(STDIN, …)` loop, `readRawKey()` for raw bytes, delegates to `KeyBindings`, optional non-blocking `stream_select` timeout |
 | `KeyBindings` | Loads preset or custom JSON map, `getAction(bytes) → string` |
-| `Level` | Goal definitions, `isComplete(state)`, move limit, level table |
-| `HighScoreBoard` | Load/save `data/high_scores.json`, prompt name, show top 10 |
-| `Game` | Main loop: input → logic → render, state machine |
+| `Level` | Goal definitions, `isComplete(state)`, move/time limits, 20-level table |
+| `HighScoreBoard` | Load/save `data/high_scores.json`, mode-split boards (moves/timer), `renderAll()` shows both |
+| `Game` | Main loop: input → logic → render, state machine, timer-mode support, `play()` static lifecycle |
+| `WelcomeScreen` | Interactive menu: mode/preset selection, start game, leaderboard, quit |
 
 ### Data flow
 
 ```
 init: Grid::fillRandom(), Input::enableRawMode(), load Level(1)
-loop:
-  Renderer::draw(grid, cursor, score, moves, level, goals)
+loop (timer mode: non-blocking 200ms poll):
+  Renderer::draw(grid, cursor, score, moves/time, level, goals)
   Input::getAction() → action
   on swap:
     Grid::swap()
     if Grid::findMatches(): validMoves++, cascade, score, check goals
     else: swap back, invalidMoves++
-  check game-over (no moves or move limit hit)
+  check game-over (no moves, move limit hit, or time up)
   on game-over: HighScoreBoard::save()
 cleanup: Input::restoreTerminal()
+```
+
+Startup flow:
+
+```
+bin/play
+  └─ Input::enableRawMode()
+  └─ WelcomeScreen::run()
+       ├─ [Start] → Game::play(preset, mode) → results → back to menu
+       ├─ [Leaderboard] → HighScoreBoard::renderAll() → back to menu
+       └─ [Quit] → exit
 ```
 
 ### Terminal handling
@@ -77,19 +89,20 @@ cleanup: Input::restoreTerminal()
 
 - Goal types: target score, clear N gems of a colour, survive N cascades.
 - Level table (20 levels) defined in `Level` constructor or a static method. Harder = fewer gem types, larger grid, higher targets, fewer moves.
-- Game-over when no valid moves remain (`Grid::hasValidMoves()`). Level fail when move limit exceeded.
+- Game-over when no valid moves remain (`Grid::hasValidMoves()`). Level fail when move limit exceeded (moves mode) or time runs out (timer mode).
 
 ### Key bindings
 
 - Three built-in presets: `arrows` (default), `wasd`, `hjkl`.
 - Custom: JSON file mapping key names or byte sequences to actions.
-- Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `quit`, `confirm`, `cancel`.
+- Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `quit`, `confirm`, `cancel`, `hint`, `leaderboard`.
 
 ### Scoring
 
 - 3-match: 30 pts, 4-match: 60 pts, 5-match: 100 pts.
 - Cascade step multiplier: ×2 per successive cascade.
 - High-score tie-breaker: fewer `invalidMoves` ranks higher.
+- Two leaderboard pools: moves mode and timer mode, stored in the same JSON file with a `mode` field per entry.
 
 ## Gotchas
 

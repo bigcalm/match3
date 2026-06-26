@@ -66,13 +66,13 @@ class WelcomeScreen
         $out = "\e[2J\e[H";
 
         $out .= "\e[1m╔══════════════════════════════════╗\e[0m\n";
-        $out .= "\e[1m║         ★  MATCH-3  ★           ║\e[0m\n";
-        $out .= "\e[1m║    A terminal puzzle game        ║\e[0m\n";
+        $out .= "\e[1m║         ★  MATCH-3  ★            ║\e[0m\n";
+        $out .= "\e[1m║     A terminal puzzle game       ║\e[0m\n";
         $out .= "\e[1m╚══════════════════════════════════╝\e[0m\n\n";
 
         $out .= $this->renderModeSelector() . "\n";
         $out .= $this->renderPresetSelector() . "\n";
-        $out .= $this->renderAction('▶ Start Game', self::START_ROW) . "\n";
+        $out .= $this->renderAction('  Start Game', self::START_ROW) . "\n";
         $out .= $this->renderAction('  Leaderboard', self::LEADERBOARD_ROW) . "\n";
         $out .= $this->renderAction('  Quit', self::QUIT_ROW) . "\n";
 
