@@ -48,7 +48,9 @@ class Renderer
                 $symbol = self::GEMS[$gem];
 
                 if ($special === Grid::HYPERCUBE) {
-                    $symbol = '✦';
+                    $symbol = 'H';
+                } elseif ($special === Grid::BOMB) {
+                    $symbol = 'B';
                 }
 
                 $sel = $r === $cursorRow && $c === $cursorCol;

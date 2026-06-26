@@ -209,17 +209,17 @@ class RendererTest extends TestCase
         $grid->setSpecial(3, 3, Grid::BOMB);
         $r = new Renderer();
         $out = $r->render($grid);
-        $this->assertStringContainsString("\e[1m\e[33m♣\e[0m", $out);
+        $this->assertStringContainsString("\e[1m\e[33mB\e[0m", $out);
     }
 
-    public function testHypercubeUsesStarSymbol(): void
+    public function testHypercubeUsesHSymbol(): void
     {
         $grid = new Grid(7);
         $this->fillAll($grid, 3);
         $grid->setSpecial(0, 0, Grid::HYPERCUBE);
         $r = new Renderer();
         $out = $r->render($grid);
-        $this->assertStringContainsString("\e[34m✦\e[0m", $out);
+        $this->assertStringContainsString("\e[34mH\e[0m", $out);
     }
 
     public function testCursorOnStripedGemShowsCursorNotStriped(): void
@@ -239,10 +239,8 @@ class RendererTest extends TestCase
         $grid->setSpecial(2, 2, Grid::BOMB);
         $r = new Renderer();
         $out = $r->render($grid, cursorRow: 2, cursorCol: 2);
-        $this->assertStringContainsString("\e[7m\e[31m♦\e[0m", $out);
+        $this->assertStringContainsString("\e[7m\e[31mB\e[0m", $out);
     }
-
-    // --- Cursor on selected cell ---
 
     public function testCursorOnSelectedCell(): void
     {
