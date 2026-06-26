@@ -7,10 +7,19 @@ class Input
     private const int ESCAPE_TIMEOUT_US = 10000;
 
     private KeyBindings $bindings;
+    /** @var resource */
+    private $stdin;
 
     public function __construct(KeyBindings $bindings)
     {
         $this->bindings = $bindings;
+        $this->stdin = STDIN;
+    }
+
+    /** @param resource $stdin */
+    public function setStdin($stdin): void
+    {
+        $this->stdin = $stdin;
     }
 
     public static function enableRawMode(): void
@@ -38,7 +47,7 @@ class Input
     public function getAction(?int $timeoutUs = null): ?string
     {
         if ($timeoutUs !== null) {
-            $read = [STDIN];
+            $read = [$this->stdin];
             $write = [];
             $except = [];
             $sec = intdiv($timeoutUs, 1_000_000);
@@ -66,7 +75,7 @@ class Input
 
     protected function readInput(): string
     {
-        $byte = fread(STDIN, 1);
+        $byte = fread($this->stdin, 1);
 
         if ($byte === false || $byte === '') {
             return '';
@@ -77,16 +86,16 @@ class Input
         }
 
         $seq = "\e";
-        stream_set_blocking(STDIN, false);
+        stream_set_blocking($this->stdin, false);
         usleep(self::ESCAPE_TIMEOUT_US);
 
-        $rest = fread(STDIN, 64);
+        $rest = fread($this->stdin, 64);
 
         if ($rest !== false && $rest !== '') {
             $seq .= $rest;
         }
 
-        stream_set_blocking(STDIN, true);
+        stream_set_blocking($this->stdin, true);
 
         return $seq;
     }

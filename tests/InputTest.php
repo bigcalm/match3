@@ -125,15 +125,32 @@ class InputTest extends TestCase
 
 class TestableInput extends Input
 {
-    private array $inputQueue = [];
+    /** @var resource */
+    private $writeEnd;
+
+    public function __construct(KeyBindings $bindings)
+    {
+        $pair = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
+
+        if ($pair === false) {
+            throw new \RuntimeException('Failed to create socket pair for TestableInput');
+        }
+
+        parent::__construct($bindings);
+        stream_set_blocking($pair[0], false);
+        $this->setStdin($pair[0]);
+        $this->writeEnd = $pair[1];
+    }
+
+    public function __destruct()
+    {
+        if (isset($this->writeEnd)) {
+            fclose($this->writeEnd);
+        }
+    }
 
     public function feedInput(string $bytes): void
     {
-        $this->inputQueue[] = $bytes;
-    }
-
-    protected function readInput(): string
-    {
-        return $this->inputQueue !== [] ? array_shift($this->inputQueue) : '';
+        fwrite($this->writeEnd, $bytes);
     }
 }

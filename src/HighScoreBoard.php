@@ -47,21 +47,22 @@ class HighScoreBoard
         return $score > $filtered[count($filtered) - 1]['score'];
     }
 
-    public function render(): string
+    public function render(?string $mode = null): string
     {
-        $filtered = $this->filtered();
+        $m = $mode ?? $this->mode;
+        $filtered = $this->filtered($m);
 
         if (empty($filtered)) {
-            return "No high scores for {$this->mode} mode yet.\n";
+            return "No high scores for {$m} mode yet.\n";
         }
 
         $out = '';
-        $heading = $this->mode === 'timer' ? 'HIGH SCORES — TIMER' : 'HIGH SCORES — MOVES';
+        $heading = $m === 'timer' ? 'HIGH SCORES — TIMER' : 'HIGH SCORES — MOVES';
         $out .= "\e[1m═══════════════════════════════════════\e[0m\n";
         $out .= "\e[1m          {$heading}\e[0m\n";
         $out .= "\e[1m═══════════════════════════════════════\e[0m\n";
 
-        $top = $this->getTop(10);
+        $top = array_slice($filtered, 0, 10);
 
         foreach ($top as $i => $entry) {
             $rank = $i + 1;
@@ -84,21 +85,13 @@ class HighScoreBoard
     {
         $this->load();
 
-        $out = '';
-
-        $saved = $this->mode;
-        $this->mode = 'moves';
-        $out .= $this->render() . "\n";
-        $this->mode = 'timer';
-        $out .= $this->render();
-        $this->mode = $saved;
-
-        return $out;
+        return $this->render('moves') . "\n" . $this->render('timer');
     }
 
-    private function filtered(): array
+    private function filtered(?string $mode = null): array
     {
-        return array_values(array_filter($this->entries, fn(array $e): bool => ($e['mode'] ?? 'moves') === $this->mode));
+        $m = $mode ?? $this->mode;
+        return array_values(array_filter($this->entries, fn(array $e): bool => ($e['mode'] ?? 'moves') === $m));
     }
 
     private function load(): void
