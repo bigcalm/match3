@@ -6,60 +6,41 @@ require __DIR__ . '/../vendor/autoload.php';
 use Match3\Game;
 use Match3\HighScoreBoard;
 use Match3\Input;
+use Match3\KeyBindings;
+use Match3\WelcomeScreen;
 
 register_shutdown_function([Input::class, 'restoreTerminal']);
 
-$preset = 'arrows';
-$mode = 'moves';
-$customBindings = null;
+Input::enableRawMode();
 
-for ($i = 1; $i < $argc; $i++) {
-    if (str_starts_with($argv[$i], '--preset=')) {
-        $preset = substr($argv[$i], 9);
-    } elseif (str_starts_with($argv[$i], '--bindings=')) {
-        $customBindings = substr($argv[$i], 11);
-    } elseif (str_starts_with($argv[$i], '--mode=')) {
-        $mode = substr($argv[$i], 7);
-    }
-}
+$input = new Input(new KeyBindings('arrows'));
+$welcome = new WelcomeScreen($input);
 
-do {
-    Input::enableRawMode();
-    Input::enableMouseTracking();
+while (true) {
+    $welcomeResult = $welcome->run();
 
-    $game = new Game($preset, $customBindings, $mode);
-    $result = $game->run();
-
-    Input::restoreTerminal();
-
-    if (empty($result)) {
+    if ($welcomeResult['action'] === 'quit') {
         break;
     }
 
-    echo "\e[2J\e[H";
+    if ($welcomeResult['action'] === 'leaderboard') {
+        Input::restoreTerminal();
 
-    if ($result['won']) {
-        echo "You win! Final score: {$result['score']}\n";
-    } else {
-        echo "Game over! Score: {$result['score']}  (Reached level {$result['level']})\n";
+        $board = new HighScoreBoard();
+        echo "\e[2J\e[H" . $board->renderAll();
+        echo "\nPress Enter to return...";
+        fgets(STDIN);
+
+        Input::enableRawMode();
+        continue;
     }
 
-    $board = new HighScoreBoard(mode: $mode);
+    $mode = $welcomeResult['mode'];
+    $preset = $welcomeResult['preset'];
 
-    if ($board->isHighScore($result['score'])) {
-        echo "New high score: {$result['score']}!\n";
-        echo "Enter your name: ";
-        $name = trim(fgets(STDIN));
+    Game::play($preset, null, $mode);
 
-        if ($name === '') {
-            $name = 'Anonymous';
-        }
+    Input::enableRawMode();
+}
 
-        $board->add($name, $result['score'], $result['level'], $result['validMoves'], $result['invalidMoves']);
-    }
-
-    echo "\n" . $board->render();
-
-    echo "Play again? (y/n): ";
-    $answer = strtolower(trim(fgets(STDIN)));
-} while ($answer === 'y');
+Input::restoreTerminal();

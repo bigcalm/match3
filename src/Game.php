@@ -39,6 +39,48 @@ class Game
         $this->grid = new Grid($this->level->getGemTypes());
     }
 
+    public static function play(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves'): void
+    {
+        Input::enableRawMode();
+        Input::enableMouseTracking();
+
+        $game = new self($preset, $customBindings, $mode);
+        $result = $game->run();
+
+        Input::restoreTerminal();
+
+        if (empty($result)) {
+            return;
+        }
+
+        echo "\e[2J\e[H";
+
+        if ($result['won']) {
+            echo "You win! Final score: {$result['score']}\n";
+        } else {
+            echo "Game over! Score: {$result['score']}  (Reached level {$result['level']})\n";
+        }
+
+        $board = new HighScoreBoard(mode: $mode);
+
+        if ($board->isHighScore($result['score'])) {
+            echo "New high score: {$result['score']}!\n";
+            echo "Enter your name: ";
+            $name = trim(fgets(STDIN));
+
+            if ($name === '') {
+                $name = 'Anonymous';
+            }
+
+            $board->add($name, $result['score'], $result['level'], $result['validMoves'], $result['invalidMoves']);
+        }
+
+        echo "\n" . $board->render();
+
+        echo "\nPress Enter to return to menu...";
+        fgets(STDIN);
+    }
+
     public function run(): array
     {
         $this->startTime = hrtime(true);

@@ -28,6 +28,11 @@ class Input
         flush();
     }
 
+    public function readRawKey(): string
+    {
+        return $this->readInput();
+    }
+
     public function getAction(?int $timeoutUs = null): ?string
     {
         if ($timeoutUs !== null) {

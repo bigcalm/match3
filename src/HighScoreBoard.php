@@ -82,6 +82,8 @@ class HighScoreBoard
 
     public function renderAll(): string
     {
+        $this->load();
+
         $out = '';
 
         $saved = $this->mode;
