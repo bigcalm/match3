@@ -4,9 +4,57 @@
 require __DIR__ . '/../vendor/autoload.php';
 
 use Match3\Grid;
+use Match3\Input;
+use Match3\KeyBindings;
 use Match3\Renderer;
+
+register_shutdown_function([Input::class, 'restoreTerminal']);
+
+Input::enableRawMode();
+Input::enableMouseTracking();
 
 $grid = new Grid();
 $renderer = new Renderer();
+$bindings = new KeyBindings('arrows');
+$input = new Input($bindings);
 
-echo $renderer->render($grid);
+$cursorRow = 0;
+$cursorCol = 0;
+
+while (true) {
+    echo $renderer->render($grid, $cursorRow, $cursorCol);
+
+    $action = $input->getAction();
+
+    if ($action === null) {
+        continue;
+    }
+
+    if ($action === 'quit') {
+        break;
+    }
+
+    if (str_starts_with($action, 'click:')) {
+        $parts = explode(':', $action);
+        $termCol = (int) ($parts[1] ?? 0);
+        $termRow = (int) ($parts[2] ?? 0);
+
+        $col = intdiv($termCol - 2, 4);
+        $row = intdiv($termRow - 2, 2);
+
+        if ($row >= 0 && $row < Grid::ROWS && $col >= 0 && $col < Grid::COLS) {
+            $cursorRow = $row;
+            $cursorCol = $col;
+        }
+
+        continue;
+    }
+
+    match ($action) {
+        'up' => $cursorRow = max(0, $cursorRow - 1),
+        'down' => $cursorRow = min(Grid::ROWS - 1, $cursorRow + 1),
+        'left' => $cursorCol = max(0, $cursorCol - 1),
+        'right' => $cursorCol = min(Grid::COLS - 1, $cursorCol + 1),
+        default => null,
+    };
+}
