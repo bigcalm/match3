@@ -26,33 +26,37 @@ class WelcomeScreen
     {
         while (true) {
             $this->render();
-            $key = $this->input->readRawKey();
+            $action = $this->input->getAction();
 
-            if ($key === '' || $key === 'q' || $key === "\e") {
+            if ($action === null) {
+                continue;
+            }
+
+            if ($action === 'quit') {
                 return ['action' => 'quit'];
             }
 
-            if ($key === "\e[A" || $key === 'k') {
+            if ($action === 'up') {
                 $this->cursor = max(0, $this->cursor - 1);
                 continue;
             }
 
-            if ($key === "\e[B" || $key === 'j') {
+            if ($action === 'down') {
                 $this->cursor = min(self::ITEM_COUNT - 1, $this->cursor + 1);
                 continue;
             }
 
-            if ($key === "\e[D" || $key === 'h') {
+            if ($action === 'left') {
                 $this->change(-1);
                 continue;
             }
 
-            if ($key === "\e[C" || $key === 'l') {
+            if ($action === 'right') {
                 $this->change(1);
                 continue;
             }
 
-            if ($key === "\n" || $key === ' ') {
+            if ($action === 'select' || $action === 'confirm') {
                 $result = $this->activate();
                 if ($result !== null) {
                     return $result;
@@ -76,7 +80,7 @@ class WelcomeScreen
         $out .= $this->renderAction('  Leaderboard', self::LEADERBOARD_ROW) . "\n";
         $out .= $this->renderAction('  Quit', self::QUIT_ROW) . "\n";
 
-        $out .= "\n\e[2m↑↓ navigate  ←→ change  ↵ select  q quit\e[0m\n";
+        $out .= "\n\e[2mArrow/WASD/HJKL navigate  Space/Enter select  Esc/Q quit\e[0m\n";
 
         echo $out;
     }
@@ -146,6 +150,7 @@ class WelcomeScreen
             $presets = ['arrows', 'wasd', 'hjkl'];
             $i = array_search($this->preset, $presets, true);
             $this->preset = $presets[($i + $dir + 3) % 3];
+            $this->input->loadBindingsPreset($this->preset);
         }
     }
 

@@ -22,6 +22,11 @@ class Input
         $this->stdin = $stdin;
     }
 
+    public function loadBindingsPreset(string $name): void
+    {
+        $this->bindings->loadPreset($name);
+    }
+
     public static function enableRawMode(): void
     {
         shell_exec('stty -icanon -echo min 1 time 0 2>/dev/null');
@@ -86,6 +91,8 @@ class Input
         }
 
         $seq = "\e";
+        $meta = stream_get_meta_data($this->stdin);
+        $wasBlocking = $meta['blocked'];
         stream_set_blocking($this->stdin, false);
         usleep(self::ESCAPE_TIMEOUT_US);
 
@@ -95,7 +102,7 @@ class Input
             $seq .= $rest;
         }
 
-        stream_set_blocking($this->stdin, true);
+        stream_set_blocking($this->stdin, $wasBlocking);
 
         return $seq;
     }

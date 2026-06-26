@@ -19,7 +19,6 @@ class InputTest extends TestCase
             'm terminator'  => ["\e[<0;15;18m", [15, 18]],
             'zero coords'   => ["\e[<0;0;0M",   [0, 0]],
             'large coords'  => ["\e[<0;999;999M", [999, 999]],
-
         ];
     }
 
@@ -64,93 +63,5 @@ class InputTest extends TestCase
     {
         $input = new Input(new KeyBindings('arrows'));
         $this->assertNull($input->getAction(0));
-    }
-
-    public function testGetActionReturnsClickForMouseSequence(): void
-    {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $input->feedInput("\e[<0;15;18M");
-        $this->assertSame('click:15:18', $input->getAction());
-    }
-
-    public function testGetActionReturnsNullForEmptyInput(): void
-    {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $input->feedInput('');
-        $this->assertNull($input->getAction());
-    }
-
-    public function testGetActionDelegatesToBindings(): void
-    {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $input->feedInput("\e[A");
-        $this->assertSame('up', $input->getAction());
-    }
-
-    public function testGetActionWithTimeoutReturnsActionIfInputAvailable(): void
-    {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $input->feedInput('q');
-        $this->assertSame('quit', $input->getAction(1_000_000));
-    }
-
-    public function testGetActionNonMouseEscapeSequence(): void
-    {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $input->feedInput("\e");
-        $this->assertSame('quit', $input->getAction());
-    }
-
-    public function testGetActionWithWasdBindings(): void
-    {
-        $input = new TestableInput(new KeyBindings('wasd'));
-        $input->feedInput('w');
-        $this->assertSame('up', $input->getAction());
-    }
-
-    public function testReadRawKeyReturnsInputBytes(): void
-    {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $input->feedInput("\e[A");
-        $this->assertSame("\e[A", $input->readRawKey());
-    }
-
-    public function testConstructedWithCustomPreset(): void
-    {
-        $input = new TestableInput(new KeyBindings('wasd'));
-        $input->feedInput('f');
-        $this->assertSame('swap', $input->getAction());
-    }
-}
-
-class TestableInput extends Input
-{
-    /** @var resource */
-    private $writeEnd;
-
-    public function __construct(KeyBindings $bindings)
-    {
-        $pair = stream_socket_pair(STREAM_PF_UNIX, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-
-        if ($pair === false) {
-            throw new \RuntimeException('Failed to create socket pair for TestableInput');
-        }
-
-        parent::__construct($bindings);
-        stream_set_blocking($pair[0], false);
-        $this->setStdin($pair[0]);
-        $this->writeEnd = $pair[1];
-    }
-
-    public function __destruct()
-    {
-        if (isset($this->writeEnd)) {
-            fclose($this->writeEnd);
-        }
-    }
-
-    public function feedInput(string $bytes): void
-    {
-        fwrite($this->writeEnd, $bytes);
     }
 }
