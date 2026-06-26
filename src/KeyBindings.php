@@ -59,11 +59,11 @@ class KeyBindings
 
     public function loadCustom(string $path): void
     {
-        $contents = file_get_contents($path);
-
-        if ($contents === false) {
+        if (!is_file($path)) {
             return;
         }
+
+        $contents = file_get_contents($path);
 
         $json = json_decode($contents, true);
 

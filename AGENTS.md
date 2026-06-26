@@ -19,7 +19,7 @@ A terminal-based Match-3 puzzle game (Bejeweled/Candy Crush style) written in PH
 - No build step (interpreted PHP).
 - Run: `php bin/play`
 - Lint: `php -l src/`
-- There are no tests yet. Write PHPUnit tests under `tests/` following PSR-4 namespace `Match3\Tests\`.
+- Tests: `./vendor/bin/phpunit` (PHPUnit under `tests/`, namespace `Match3\Tests\`).
 
 ## Code style
 
