@@ -19,6 +19,7 @@ class Renderer
         int $selectedCol = -1,
         array $highlights = [],
         array $hud = [],
+        string $footer = '',
     ): string {
         $highlightSet = [];
 
@@ -56,6 +57,10 @@ class Renderer
         }
 
         $out .= $this->border('└', '┘', '┴') . "\n";
+
+        if ($footer !== '') {
+            $out .= $footer . "\n";
+        }
 
         return $out;
     }
