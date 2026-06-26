@@ -1,0 +1,329 @@
+#!/usr/bin/env php
+<?php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Match3\Grid;
+use Match3\Input;
+use Match3\Renderer;
+
+Input::enableRawMode();
+register_shutdown_function([Input::class, 'restoreTerminal']);
+
+$renderer = new Renderer();
+$hud = ['level' => 1, 'score' => 0, 'scoreGoal' => 200, 'validMoves' => 0, 'invalidMoves' => 0, 'mode' => 'moves', 'movesLeft' => 40, 'movesTotal' => 40];
+
+function fillNoMatch(Grid $grid): void
+{
+    for ($r = 0; $r < Grid::ROWS; $r++) {
+        for ($c = 0; $c < Grid::COLS; $c++) {
+            $grid->setCell($r, $c, ($r + $c) % 7);
+        }
+    }
+}
+
+function waitForAnyKey(): void
+{
+    fread(STDIN, 64);
+}
+
+function describe(string $msg): void
+{
+    echo "\e[2m{$msg}\e[0m\n";
+    if (ob_get_level()) { ob_flush(); } flush();
+}
+
+function renderWith(Grid $grid, Renderer $r, array $hud, string $footer, array $highlights = []): void
+{
+    echo "\e[2J\e[H";
+    echo $r->render($grid, 0, 0, -1, -1, $highlights, $hud, $footer);
+    if (ob_get_level()) { ob_flush(); } flush();
+}
+
+function flash(Grid $grid, Renderer $r, array $cells, array $hud, string $footer): void
+{
+    for ($i = 0; $i < 3; $i++) {
+        echo $r->render($grid, 0, 0, -1, -1, $cells, $hud, $footer);
+        if (ob_get_level()) { ob_flush(); } flush(); usleep(250_000);
+        echo $r->render($grid, 0, 0, -1, -1, [], $hud, '');
+        if (ob_get_level()) { ob_flush(); } flush(); usleep(200_000);
+    }
+}
+
+function runCascadeStepped(Grid $grid, Renderer $r, array $hud): void
+{
+    $step = 0;
+    do {
+        $matches = $grid->findMatches();
+        if (empty($matches)) { break; }
+        $step++;
+
+        // ── Phase 1: Show match set ──
+        describe("Step {$step}: match found (" . count($matches) . " cells). Press any key to flash...");
+        waitForAnyKey();
+        renderWith($grid, $r, $hud, "MATCH — highlighted cells will flash", $matches);
+
+        // ── Phase 2: Activate specials ──
+        $set = [];
+        foreach ($matches as $pos) { $set["{$pos[0]},{$pos[1]}"] = true; }
+        $activated = [];
+        foreach ($matches as [$mr, $mc]) {
+            $sp = $grid->getSpecial($mr, $mc);
+            if ($sp !== Grid::NONE) {
+                $label = match ($sp) {
+                    Grid::BOMB => 'BOMB',
+                    Grid::STRIPED_H, Grid::STRIPED_V => 'STRIPED',
+                    Grid::HYPERCUBE => 'HYPERCUBE',
+                    default => 'SPECIAL',
+                };
+                $extra = $grid->activateSpecial($mr, $mc);
+                describe("{$label} at ({$mr},{$mc}) activates — " . count($extra) . " cells affected. Press any key to flash...");
+                waitForAnyKey();
+                foreach ($extra as $ep) {
+                    $ek = "{$ep[0]},{$ep[1]}";
+                    if (!isset($set[$ek])) { $set[$ek] = true; $activated[] = $ep; }
+                }
+                // Show the blast area highlighted
+                $allWithActivated = array_merge($matches, $activated);
+                renderWith($grid, $r, $hud, "BLAST — activated cells highlighted in addition to match", $allWithActivated);
+            }
+        }
+
+        // ── Phase 3: Flash animation ──
+        $all = array_merge($matches, $activated);
+        describe("Flashing " . count($all) . " cells (" . count($matches) . " matched + " . count($activated) . " activated)...");
+        flash($grid, $r, $all, $hud, '');
+
+        // ── Phase 4: Create new specials from 4+ matches ──
+        $groups = $grid->groupMatches($matches);
+        $keep = [];
+        foreach ($groups as $g) {
+            $size = count($g);
+            if ($size >= 4) {
+                $pos = $grid->createSpecial($g);
+                $keep[] = $pos;
+                $type = match ($grid->getSpecial($pos[0], $pos[1])) {
+                    Grid::STRIPED_H, Grid::STRIPED_V => 'striped',
+                    Grid::BOMB => 'bomb',
+                    Grid::HYPERCUBE => 'hypercube',
+                    default => 'special',
+                };
+                describe("{$size}-match spawns a new {$type} gem at ({$pos[0]},{$pos[1]})");
+            }
+        }
+
+        $keepMap = [];
+        foreach ($keep as [$kr, $kc]) { $keepMap["$kr,$kc"] = true; }
+
+        // ── Phase 5: Gap (cells cleared) ──
+        $toClear = [];
+        foreach ($matches as [$mr, $mc]) {
+            if (!isset($keepMap["$mr,$mc"])) { $toClear["$mr,$mc"] = [$mr, $mc]; }
+        }
+        foreach ($activated as $ap) {
+            $ak = "{$ap[0]},{$ap[1]}";
+            if (!isset($keepMap[$ak]) && !isset($toClear[$ak])) { $toClear[$ak] = $ap; }
+        }
+
+        $grid->removeCells(array_values($toClear));
+        if (!empty($toClear)) {
+            describe("GAP — " . count($toClear) . " cells cleared (empty cells shown). Gravity will fill them.");
+            echo $r->render($grid, 0, 0, -1, -1, [], $hud, '');
+            if (ob_get_level()) { ob_flush(); } flush();
+            waitForAnyKey();
+        }
+
+        // ── Phase 6: Settle (gravity) ──
+        describe("SETTLE — applying gravity...");
+        $grid->applyGravity();
+        echo $r->render($grid, 0, 0, -1, -1, [], $hud, '');
+        if (ob_get_level()) { ob_flush(); } flush();
+        usleep(500_000);
+
+        // Check for next step
+        if (!empty($grid->findMatches())) {
+            describe("New matches detected after gravity. Press any key for next cascade step...");
+            waitForAnyKey();
+        }
+    } while (true);
+
+    describe("Board stable — no more matches.");
+    renderWith($grid, $r, $hud, "FINAL — stable board");
+    waitForAnyKey();
+}
+
+// ── Scenario 1: 3-match ──
+$g = new Grid(7);
+fillNoMatch($g);
+$g->setCell(3, 2, 1);
+$g->setCell(3, 3, 1);
+$g->setCell(3, 4, 1);
+$g->setCell(3, 5, 4);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  1. Basic 3-match                       ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  Setup: row 3, cols 2-4 set to ♥ (gem 1)║\e[0m\n";
+echo "\e[1m║  These 3 cells form a horizontal match. ║\e[0m\n";
+echo "\e[1m║  No special gem, no cascade.            ║\e[0m\n";
+echo "\e[1m║  Expected: flash 3× → cells disappear  ║\e[0m\n";
+echo "\e[1m║  → gravity fills → board stable.       ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 2: 4-match → creates a striped gem ──
+$g = new Grid(7);
+fillNoMatch($g);
+for ($c = 2; $c <= 5; $c++) { $g->setCell(3, $c, 1); }
+$g->setCell(3, 6, 2);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  2. 4-match → creates a striped gem     ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  Setup: row 3, cols 2-5 set to ♥       ║\e[0m\n";
+echo "\e[1m║  4 in a row → special gem created at    ║\e[0m\n";
+echo "\e[1m║  the first matched cell (3,2).          ║\e[0m\n";
+echo "\e[1m║  Expected: flash → 3 cells removed      ║\e[0m\n";
+echo "\e[1m║  (the 4th becomes striped and stays).   ║\e[0m\n";
+echo "\e[1m║  The striped gem survives gravity and   ║\e[0m\n";
+echo "\e[1m║  is visible as underlined ♥ on the      ║\e[0m\n";
+echo "\e[1m║  final board.                           ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 3: 5-match → creates a bomb ──
+$g = new Grid(7);
+fillNoMatch($g);
+for ($c = 1; $c <= 5; $c++) { $g->setCell(3, $c, 1); }
+$g->setCell(3, 6, 2);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  3. 5-match → creates a bomb            ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  Setup: row 3, cols 1-5 set to ♥       ║\e[0m\n";
+echo "\e[1m║  5 in a row → bomb created at position  ║\e[0m\n";
+echo "\e[1m║  (3,1). 4 cells are cleared, bomb stays ║\e[0m\n";
+echo "\e[1m║  Expected: flash → 4 cells removed      ║\e[0m\n";
+echo "\e[1m║  (the 5th becomes bombs and survives).  ║\e[0m\n";
+echo "\e[1m║  The bomb is visible as bold ♥ on the   ║\e[0m\n";
+echo "\e[1m║  final board.                           ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 4: 6-match → creates a hypercube ──
+$g = new Grid(7);
+fillNoMatch($g);
+for ($c = 1; $c <= 6; $c++) { $g->setCell(3, $c, 1); }
+$g->setCell(3, 7, 2);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  4. 6-match → creates a hypercube       ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  Setup: row 3, cols 1-6 set to ♥       ║\e[0m\n";
+echo "\e[1m║  6 in a row → hypercube at (3,1).      ║\e[0m\n";
+echo "\e[1m║  5 cells are cleared, hypercube stays.  ║\e[0m\n";
+echo "\e[1m║  The hypercube is visible as ✦ on the   ║\e[0m\n";
+echo "\e[1m║  final board. Swap it with any gem in   ║\e[0m\n";
+echo "\e[1m║  gameplay to clear all of that colour.  ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 5: bomb activation ──
+$g = new Grid(7);
+fillNoMatch($g);
+$g->setCell(3, 2, 1);
+$g->setCell(3, 3, 1);
+$g->setCell(3, 4, 1);
+$g->setSpecial(3, 3, Grid::BOMB);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  5. Bomb activation                      ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  A bomb already exists at (3,3).         ║\e[0m\n";
+echo "\e[1m║  Three ♥ at (3,2),(3,3),(3,4) form a    ║\e[0m\n";
+echo "\e[1m║  match. The bomb is in the match and     ║\e[0m\n";
+echo "\e[1m║  activates: clears a 3×3 blast area      ║\e[0m\n";
+echo "\e[1m║  centered on (3,3) — rows 2-4, cols 2-4.║\e[0m\n";
+echo "\e[1m║  Expected: all 9 cells in the blast area ║\e[0m\n";
+echo "\e[1m║  flash → go empty → gravity fills from   ║\e[0m\n";
+echo "\e[1m║  above. Bomb itself is consumed.         ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 6: striped activation ──
+$g = new Grid(7);
+fillNoMatch($g);
+$g->setCell(3, 2, 1);
+$g->setCell(3, 3, 1);
+$g->setCell(3, 4, 1);
+$g->setSpecial(3, 3, Grid::STRIPED_H);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  6. Striped_H activation                 ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  A striped gem already exists at (3,3).  ║\e[0m\n";
+echo "\e[1m║  Three ♥ at (3,2),(3,3),(3,4) match.    ║\e[0m\n";
+echo "\e[1m║  The striped activates: clears ENTIRE    ║\e[0m\n";
+echo "\e[1m║  row 3 (all 8 columns).                  ║\e[0m\n";
+echo "\e[1m║  Expected: all 8 cells of row 3 flash →  ║\e[0m\n";
+echo "\e[1m║  go empty → gravity fills from above.   ║\e[0m\n";
+echo "\e[1m║  Striped gem itself is consumed.         ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 7: hypercube match-activation ──
+$g = new Grid(7);
+fillNoMatch($g);
+$g->setCell(3, 2, 2);
+$g->setCell(3, 3, 2);
+$g->setCell(3, 4, 2);
+$g->setSpecial(3, 3, Grid::HYPERCUBE);
+$g->setCell(0, 0, 2);
+$g->setCell(7, 7, 2);
+$g->setCell(4, 5, 2);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  7. Hypercube match-activation           ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  A hypercube (✦) exists at (3,3) on gem  ║\e[0m\n";
+echo "\e[1m║  type 2 (♠). Three ♠ match — hypercube   ║\e[0m\n";
+echo "\e[1m║  activates: clears ALL gem-2 cells on    ║\e[0m\n";
+echo "\e[1m║  the entire board. Extra ♠ placed at     ║\e[0m\n";
+echo "\e[1m║  (0,0), (7,7), (4,5) as targets.         ║\e[0m\n";
+echo "\e[1m║  Expected: all ♠ cells flash and clear.  ║\e[0m\n";
+echo "\e[1m║  Non-♠ cells are unaffected.             ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board (♠ cells highlighted). Press any key...", [[0,0], [3,2], [3,3], [3,4], [4,5], [7,7]]);
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+// ── Scenario 8: multi-cascade ──
+$g = new Grid(7);
+fillNoMatch($g);
+$g->setCell(7, 2, 0);
+$g->setCell(7, 3, 0);
+$g->setCell(7, 4, 0);
+$g->setCell(6, 2, 1);
+$g->setCell(5, 2, 1);
+$g->setCell(3, 2, 1);
+echo "\e[2J\e[H\e[1m╔════════════════════════════════════════╗\e[0m\n";
+echo "\e[1m║  8. Multi-cascade                        ║\e[0m\n";
+echo "\e[1m╠════════════════════════════════════════╣\e[0m\n";
+echo "\e[1m║  Step 1: three ♦ at row 7, cols 2-4    ║\e[0m\n";
+echo "\e[1m║  form a horizontal match.               ║\e[0m\n";
+echo "\e[1m║  After gravity, three ♥ at column 2     ║\e[0m\n";
+echo "\e[1m║  (now at rows 5, 6, 7) should align     ║\e[0m\n";
+echo "\e[1m║  into a vertical match — step 2.        ║\e[0m\n";
+echo "\e[1m║  Expected: 2 separate cascade steps     ║\e[0m\n";
+echo "\e[1m║  with flash, gap, gravity each.         ║\e[0m\n";
+echo "\e[1m╚════════════════════════════════════════╝\e[0m\n\n";
+renderWith($g, $renderer, $hud, "Initial board. Press any key to begin...");
+waitForAnyKey();
+runCascadeStepped($g, $renderer, $hud);
+
+echo "\e[2J\e[H\e[1mAll scenarios complete.\e[0m\n";

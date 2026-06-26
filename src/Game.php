@@ -25,10 +25,10 @@ class Game
     private const int TIMER_RENDER_INTERVAL_NS = 200_000_000;
     private const int INPUT_TIMEOUT_US = 200_000;
     private const int HINT_DISPLAY_US = 400_000;
-    private const int CASCADE_GAP_US = 120_000;
-    private const int CASCADE_SETTLE_US = 80_000;
-    private const int FLASH_ON_US = 100_000;
-    private const int FLASH_OFF_US = 80_000;
+    private const int CASCADE_GAP_US = 300_000;
+    private const int CASCADE_SETTLE_US = 200_000;
+    private const int FLASH_ON_US = 250_000;
+    private const int FLASH_OFF_US = 200_000;
     private const int CLICK_COL_OFFSET = 2;
     private const int CLICK_COL_STRIDE = 4;
     private const int CLICK_ROW_OFFSET = 2;
@@ -188,6 +188,8 @@ class Game
         $hud = $this->buildHud();
         $footer = $this->buildFooter();
         echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, $this->selRow, $this->selCol, [], $hud, $footer);
+        if (ob_get_level()) { ob_flush(); }
+        flush();
     }
 
     private function buildFooter(): string
@@ -286,6 +288,8 @@ class Game
         $hud = $this->buildHud();
         $footer = $this->buildFooter();
         echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud, $footer);
+        if (ob_get_level()) { ob_flush(); }
+        flush();
         usleep(self::HINT_DISPLAY_US);
     }
 
@@ -417,12 +421,14 @@ class Game
 
             if (!empty($toClear)) {
                 echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+                if (ob_get_level()) { ob_flush(); }
                 flush();
                 usleep(self::CASCADE_GAP_US);
             }
 
             $this->grid->applyGravity();
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+            if (ob_get_level()) { ob_flush(); }
             flush();
             usleep(self::CASCADE_SETTLE_US);
             $cascadeStep++;
@@ -433,9 +439,11 @@ class Game
     {
         for ($i = 0; $i < 3; $i++) {
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
+            if (ob_get_level()) { ob_flush(); }
             flush();
             usleep(self::FLASH_ON_US);
             echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
+            if (ob_get_level()) { ob_flush(); }
             flush();
             usleep(self::FLASH_OFF_US);
         }
