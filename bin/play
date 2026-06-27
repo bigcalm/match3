@@ -39,7 +39,10 @@ while (true) {
     $preset = $welcomeResult['preset'];
     $mouseMode = $welcomeResult['mouseMode'] ?? 'drag';
 
-    Game::play($preset, null, $mode, $mouseMode);
+    $customPath = __DIR__ . '/../data/custom_bindings.json';
+    $custom = is_file($customPath) ? $customPath : null;
+
+    Game::play($preset, $custom, $mode, $mouseMode);
 
     Input::enableRawMode();
 }
