@@ -67,12 +67,12 @@ class WelcomeScreen
 
     private function render(): void
     {
-        $out = "\e[2J\e[H";
+        $out = Renderer::ANSI_CLEAR_ALL_HOME;
 
-        $out .= "\e[1m╔══════════════════════════════════╗\e[0m\n";
-        $out .= "\e[1m║         ★  MATCH-3  ★            ║\e[0m\n";
-        $out .= "\e[1m║     A terminal puzzle game       ║\e[0m\n";
-        $out .= "\e[1m╚══════════════════════════════════╝\e[0m\n\n";
+        $out .= Renderer::ANSI_BOLD . "╔══════════════════════════════════╗" . Renderer::ANSI_RESET . "\n";
+        $out .= Renderer::ANSI_BOLD . "║         ★  MATCH-3  ★            ║" . Renderer::ANSI_RESET . "\n";
+        $out .= Renderer::ANSI_BOLD . "║     A terminal puzzle game       ║" . Renderer::ANSI_RESET . "\n";
+        $out .= Renderer::ANSI_BOLD . "╚══════════════════════════════════╝" . Renderer::ANSI_RESET . "\n\n";
 
         $out .= $this->renderModeSelector() . "\n";
         $out .= $this->renderPresetSelector() . "\n";
@@ -80,7 +80,7 @@ class WelcomeScreen
         $out .= $this->renderAction('  Leaderboard', self::LEADERBOARD_ROW) . "\n";
         $out .= $this->renderAction('  Quit', self::QUIT_ROW) . "\n";
 
-        $out .= "\n\e[2mArrow/WASD/HJKL navigate  Space/Enter select  Q quit\e[0m\n";
+        $out .= "\n" . Renderer::ANSI_DIM . "Arrow/WASD/HJKL navigate  Space/Enter select  Q quit" . Renderer::ANSI_RESET . "\n";
 
         echo $out;
     }
@@ -93,7 +93,7 @@ class WelcomeScreen
 
         foreach ($opts as $m) {
             if ($m === $this->mode) {
-                $parts[] = "\e[7m {$m} \e[0m";
+                $parts[] = Renderer::ANSI_REVERSE . " {$m} " . Renderer::ANSI_RESET;
             } else {
                 $parts[] = "  {$m}  ";
             }
@@ -102,7 +102,7 @@ class WelcomeScreen
         $line = $label . implode(' ', $parts);
 
         if ($this->cursor === self::MODE_ROW) {
-            return "\e[33m→\e[0m {$line}";
+            return Renderer::ANSI_YELLOW . "→" . Renderer::ANSI_RESET . " {$line}";
         }
 
         return "   {$line}";
@@ -116,7 +116,7 @@ class WelcomeScreen
 
         foreach ($opts as $p) {
             if ($p === $this->preset) {
-                $parts[] = "\e[7m {$p} \e[0m";
+                $parts[] = Renderer::ANSI_REVERSE . " {$p} " . Renderer::ANSI_RESET;
             } else {
                 $parts[] = "  {$p}  ";
             }
@@ -125,7 +125,7 @@ class WelcomeScreen
         $line = $label . implode(' ', $parts);
 
         if ($this->cursor === self::PRESET_ROW) {
-            return "\e[33m→\e[0m {$line}";
+            return Renderer::ANSI_YELLOW . "→" . Renderer::ANSI_RESET . " {$line}";
         }
 
         return "   {$line}";
@@ -134,7 +134,7 @@ class WelcomeScreen
     private function renderAction(string $label, int $row): string
     {
         if ($this->cursor === $row) {
-            return "\e[33m→\e[0m \e[7m{$label}\e[0m";
+            return Renderer::ANSI_YELLOW . "→" . Renderer::ANSI_RESET . " " . Renderer::ANSI_REVERSE . "{$label}" . Renderer::ANSI_RESET;
         }
 
         return "   {$label}";

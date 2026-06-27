@@ -7,6 +7,18 @@ class Renderer
     /** Number of HUD lines rendered above the grid. */
     public const int HUD_LINES = 4;
 
+    public const string ANSI_ESC = "\e";
+    public const string ANSI_HOME = "\e[H";
+    public const string ANSI_CLEAR = "\e[J";
+    public const string ANSI_CLEAR_HOME = "\e[H\e[J";
+    public const string ANSI_CLEAR_ALL_HOME = "\e[2J\e[H";
+    public const string ANSI_RESET = "\e[0m";
+    public const string ANSI_BOLD = "\e[1m";
+    public const string ANSI_DIM = "\e[2m";
+    public const string ANSI_UNDERLINE = "\e[4m";
+    public const string ANSI_REVERSE = "\e[7m";
+    public const string ANSI_YELLOW = "\e[33m";
+
     private const array GEMS = ['♦', '♥', '♣', '♠', '●', '▲', '◆', '★'];
 
     private const array COLORS = [31, 32, 33, 34, 35, 36, 37, 90];
@@ -27,7 +39,7 @@ class Renderer
             $highlightSet["{$pos[0]},{$pos[1]}"] = true;
         }
 
-        $out = "\e[H\e[J";
+        $out = self::ANSI_CLEAR_HOME;
 
         $out .= $this->renderHud($hud);
 
@@ -58,17 +70,17 @@ class Renderer
                 $bomb = $special === Grid::BOMB;
 
                 if (isset($highlightSet["$r,$c"])) {
-                    $out .= " \e[1m\e[7m\e[{$color}m{$symbol}\e[0m │";
+                    $out .= " " . self::ANSI_BOLD . self::ANSI_REVERSE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
                 } elseif ($sel) {
-                    $out .= " \e[7m\e[{$color}m{$symbol}\e[0m │";
+                    $out .= " " . self::ANSI_REVERSE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
                 } elseif ($r === $selectedRow && $c === $selectedCol) {
-                    $out .= " \e[4m\e[{$color}m{$symbol}\e[0m │";
+                    $out .= " " . self::ANSI_UNDERLINE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
                 } elseif ($spc) {
-                    $out .= " \e[4m\e[{$color}m{$symbol}\e[0m │";
+                    $out .= " " . self::ANSI_UNDERLINE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
                 } elseif ($bomb) {
-                    $out .= " \e[1m\e[{$color}m{$symbol}\e[0m │";
+                    $out .= " " . self::ANSI_BOLD . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
                 } else {
-                    $out .= " \e[{$color}m{$symbol}\e[0m │";
+                    $out .= " \e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
                 }
             }
             $out .= "\n";

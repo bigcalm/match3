@@ -65,7 +65,7 @@ class Game
             return;
         }
 
-        echo "\e[2J\e[H";
+        echo Renderer::ANSI_CLEAR_ALL_HOME;
 
         if ($result['won']) {
             echo "You win! Final score: {$result['score']}\n";
@@ -299,7 +299,7 @@ class Game
     private function handleLeaderboard(): void
     {
         $board = new HighScoreBoard(mode: $this->mode);
-        echo "\e[2J\e[H" . $board->render() . "\nPress any key to return...\n";
+        echo Renderer::ANSI_CLEAR_ALL_HOME . $board->render() . "\nPress any key to return...\n";
 
         while (true) {
             $action = $this->input->getAction();
