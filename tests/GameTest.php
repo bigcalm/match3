@@ -193,5 +193,44 @@ class GameTest extends TestCase
         $this->assertSame(2, $levelProp->getValue($game)->getNumber());
 
         $this->assertSame(0, $movesProp->getValue($game));
+
+        $maxCascadeProp = $ref->getProperty('maxCascade');
+        $maxCascadeProp->setAccessible(true);
+        $this->assertGreaterThan(0, $maxCascadeProp->getValue($game));
+
+        $maxClearProp = $ref->getProperty('maxClear');
+        $maxClearProp->setAccessible(true);
+        $this->assertGreaterThan(0, $maxClearProp->getValue($game));
+    }
+
+    public function testRunReturnsAllStats(): void
+    {
+        $game = new Game(mode: 'moves');
+        $ref = new \ReflectionClass($game);
+
+        $gameOverProp = $ref->getProperty('gameOver');
+        $gameOverProp->setAccessible(true);
+        $gameOverProp->setValue($game, true);
+
+        $maxCascadeProp = $ref->getProperty('maxCascade');
+        $maxCascadeProp->setAccessible(true);
+        $maxCascadeProp->setValue($game, 7);
+
+        $maxClearProp = $ref->getProperty('maxClear');
+        $maxClearProp->setAccessible(true);
+        $maxClearProp->setValue($game, 24);
+
+        Game::$disableAnimations = true;
+        ob_start();
+        $result = $game->run();
+        ob_end_clean();
+        Game::$disableAnimations = false;
+
+        $this->assertArrayHasKey('maxCascade', $result);
+        $this->assertArrayHasKey('maxClear', $result);
+        $this->assertArrayHasKey('timePlayed', $result);
+        $this->assertSame(7, $result['maxCascade']);
+        $this->assertSame(24, $result['maxClear']);
+        $this->assertGreaterThanOrEqual(0, $result['timePlayed']);
     }
 }

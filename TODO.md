@@ -18,15 +18,13 @@
 
 ### Polish / UX (high impact, low code)
 
-- **Level-complete splash**
-  Currently the level just flips to the next one. A brief "Level Clear!"
-  overlay centred in the grid, rendered with the same `renderAndWait`
-  pattern as cascade flash, would feel more rewarding.
+- **Level-complete splash** ✅
+  "LEVEL CLEAR!" banner overlaid on grid rows 3-4 with a solid separator
+  for 1.2 seconds before advancing. Uses `str_pad` for centring.
 
-- **Game-over stats screen**
-  Currently a single text line after terminal restore. Could show: longest
-  cascade, most gems cleared in one move, total time played — then return
-  to menu.
+- **Game-over stats screen** ✅
+  Shows score, level, moves (valid/invalid), time played, longest cascade,
+  and biggest clear in a formatted panel before the high-score prompt.
 
 - **Pause key**
   No way to pause in timer mode. A `p` key (mapped in all three presets)

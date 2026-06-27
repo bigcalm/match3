@@ -22,6 +22,8 @@ class Game
     private string $mouseMode = 'drag';
     private int $startTime = 0;
     private int $elapsedSeconds = 0;
+    private int $maxCascade = 0;
+    private int $maxClear = 0;
     private bool $gameOver = false;
 
     public static bool $disableAnimations = false;
@@ -74,10 +76,28 @@ class Game
         echo Renderer::ANSI_CLEAR_ALL_HOME;
 
         if ($result['won']) {
-            echo "You win! Final score: {$result['score']}\n";
+            echo Renderer::ANSI_BOLD . "╔══════════════════════════════╗\n";
+            echo "║         YOU WIN!           ║\n";
+            echo "╚══════════════════════════════╝" . Renderer::ANSI_RESET . "\n\n";
         } else {
-            echo "Game over! Score: {$result['score']}  (Reached level {$result['level']})\n";
+            echo Renderer::ANSI_BOLD . "╔══════════════════════════════╗\n";
+            echo "║        GAME OVER           ║\n";
+            echo "╚══════════════════════════════╝" . Renderer::ANSI_RESET . "\n\n";
         }
+
+        $min = intdiv($result['timePlayed'], 60);
+        $sec = $result['timePlayed'] % 60;
+        echo "  Score       {$result['score']}\n";
+        echo "  Level       {$result['level']}\n";
+        echo "  Moves       {$result['validMoves']} valid, {$result['invalidMoves']} invalid\n";
+
+        if ($mode === 'moves') {
+            $min = intdiv($result['timePlayed'], 60);
+            $sec = $result['timePlayed'] % 60;
+            echo "  Time        {$min}:" . str_pad($sec, 2, '0', STR_PAD_LEFT) . "\n";
+        }
+        echo "  Longest cascade   {$result['maxCascade']} steps\n";
+        echo "  Biggest clear     {$result['maxClear']} gems\n\n";
 
         $board = new HighScoreBoard(mode: $mode);
 
@@ -177,6 +197,9 @@ class Game
             'validMoves' => $this->validMoves,
             'invalidMoves' => $this->invalidMoves,
             'won' => $this->level->isComplete(['score' => $this->score]),
+            'maxCascade' => $this->maxCascade,
+            'maxClear' => $this->maxClear,
+            'timePlayed' => $this->elapsedSeconds,
         ];
     }
 
@@ -195,8 +218,11 @@ class Game
         $hud = $this->buildHud();
         $footer = $this->buildFooter();
         echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, $this->selRow, $this->selCol, [], $hud, $footer);
-        if (ob_get_level()) { ob_flush(); }
-        flush();
+
+        if (!self::$disableAnimations) {
+            if (ob_get_level()) { ob_flush(); }
+            flush();
+        }
     }
 
     private function buildFooter(): string
@@ -322,8 +348,11 @@ class Game
         $this->validMoves++;
         $this->movesUsed++;
 
+        $totalClearedThisMove = 0;
+
         if ($this->grid->hasPendingActivation()) {
             $activated = $this->grid->consumeActivation();
+            $totalClearedThisMove += count($activated);
             $hud = $this->buildHud();
             $footer = $this->buildFooter();
             $this->animateFlash($activated, $hud, $footer);
@@ -333,7 +362,10 @@ class Game
             $this->renderAndWait(self::CASCADE_SETTLE_US, [], $hud, $footer);
         }
 
-        $this->processCascade();
+        $result = $this->processCascade();
+        $totalClearedThisMove += $result['cleared'];
+        $this->maxCascade = max($this->maxCascade, $result['steps']);
+        $this->maxClear = max($this->maxClear, $totalClearedThisMove);
 
         if ($this->level->isComplete(['score' => $this->score])) {
             $hud = $this->buildHud();
@@ -356,9 +388,10 @@ class Game
         }
     }
 
-    private function processCascade(): void
+    private function processCascade(): array
     {
         $cascadeStep = 0;
+        $totalCleared = 0;
 
         do {
             $matches = $this->grid->findMatches();
@@ -420,6 +453,7 @@ class Game
                 unset($toClear["$kr,$kc"]);
             }
 
+            $totalCleared += count($toClear);
             $this->grid->removeCells(array_values($toClear));
 
             if (!empty($toClear)) {
@@ -430,6 +464,8 @@ class Game
             $this->renderAndWait(self::CASCADE_SETTLE_US, [], $hud, $footer);
             $cascadeStep++;
         } while (true);
+
+        return ['steps' => $cascadeStep, 'cleared' => $totalCleared];
     }
 
     private function renderAndWait(int $durationUs, array $highlights, array $hud, string $footer, ?string $splash = null): void
