@@ -32,10 +32,10 @@
   "PAUSED" box. Timer stops during pause (adjusts `startTime` by pause
   duration on resume). Any key unpauses and redraws the grid.
 
-- **High-score file resilience**
-  `data/high_scores.json` is read with graceful-empty on missing/corrupt,
-  but there's no atomic write (partial write on crash corrupts the file)
-  and no write-lock guard. Rare, but scores would be lost silently.
+- **High-score file resilience** ✅
+  Atomic write via temp file + rename. Creates `.bak` copy on every
+  save. On corrupt main file, attempts recovery from `.bak`. Starts
+  empty only if both files are missing or corrupt.
 
 ### Architecture (nice-to-have, moderate refactor)
 

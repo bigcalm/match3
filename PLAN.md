@@ -286,4 +286,4 @@ match3/
 - **Key binding conflicts** — certain multi-byte sequences can collide (e.g. `\e` alone vs `\e[A`). The parser needs a short timeout after receiving `\e` to disambiguate escape from the start of a sequence.
 - **Timer mode polling** — `Input::getAction(timeoutUs)` uses `stream_select` for non-blocking reads. The game loop polls every 200ms in timer mode to keep the countdown visible.
 - **Level balancing** — goal targets, gem-type counts, and move limits need play-testing to feel fair. Start generous and tighten per level.
-- **High score file** — `data/high_scores.json` could be deleted or corrupted; handle gracefully (start with empty board).
+- **High score file** — `data/high_scores.json` could be deleted or corrupted; handle gracefully (start with empty board). Uses atomic `rename` + `.bak` copy; corrupt main file auto-recovers from `.bak`.

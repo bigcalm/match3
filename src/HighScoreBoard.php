@@ -96,23 +96,32 @@ class HighScoreBoard
 
     private function load(): void
     {
-        if (!is_file($this->filePath)) {
-            return;
+        $decoded = $this->tryLoadFile($this->filePath);
+
+        if ($decoded === null) {
+            $decoded = $this->tryLoadFile($this->filePath . '.bak');
         }
 
-        $data = file_get_contents($this->filePath);
+        if ($decoded !== null) {
+            $this->entries = $decoded;
+        }
+    }
 
-        if ($data === false) {
-            return;
+    private function tryLoadFile(string $path): ?array
+    {
+        if (!is_file($path)) {
+            return null;
         }
 
-        $decoded = json_decode($data, true);
+        $contents = file_get_contents($path);
 
-        if (!is_array($decoded)) {
-            return;
+        if ($contents === false) {
+            return null;
         }
 
-        $this->entries = $decoded;
+        $decoded = json_decode($contents, true);
+
+        return is_array($decoded) ? $decoded : null;
     }
 
     private function save(): void
@@ -123,7 +132,10 @@ class HighScoreBoard
             mkdir($dir, 0755, true);
         }
 
-        file_put_contents($this->filePath, json_encode($this->entries, JSON_PRETTY_PRINT));
+        $tmpPath = $this->filePath . '.tmp';
+        file_put_contents($tmpPath, json_encode($this->entries, JSON_PRETTY_PRINT));
+        rename($tmpPath, $this->filePath);
+        copy($this->filePath, $this->filePath . '.bak');
     }
 
     private function sort(): void

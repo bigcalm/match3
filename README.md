@@ -95,7 +95,7 @@ Example `data/custom_bindings.json` that switches movement to `IJKL` while keepi
 - Each level has a **score goal**. Reach it within the limit (moves or time) to advance.
 - **20 levels** with increasing difficulty (fewer gem types, higher targets, fewer moves).
 - **Running out of valid moves** or **exceeding the move/time limit** ends the game.
-- **High scores** are saved to `data/high_scores.json`, split into separate boards for moves mode and timer mode. Tie-breaker: fewer invalid moves ranks higher.
+- **High scores** are saved to `data/high_scores.json` (with a `.bak` backup written after each save), split into separate boards for moves mode and timer mode. Tie-breaker: fewer invalid moves ranks higher.
 
 ### Scoring
 
@@ -141,7 +141,7 @@ src/
 ├── Renderer.php          # ANSI frame rendering, HUD, controls footer
 └── WelcomeScreen.php     # Interactive menu for mode and preset selection
 data/
-├── high_scores.json      # Persisted high scores
+├── high_scores.json      # Persisted high scores (atomic write + .bak fallback)
 └── settings.json         # Persisted welcome screen settings
 tests/
 ├── FunctionalTest.php    # Integration tests

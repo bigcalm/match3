@@ -16,8 +16,10 @@ class HighScoreBoardTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (is_file($this->testFile)) {
-            unlink($this->testFile);
+        foreach ([$this->testFile, $this->testFile . '.tmp', $this->testFile . '.bak'] as $f) {
+            if (is_file($f)) {
+                unlink($f);
+            }
         }
     }
 
@@ -184,5 +186,48 @@ class HighScoreBoardTest extends TestCase
         $this->assertStringContainsString('TIMER', $render);
         $this->assertStringContainsString('Alice', $render);
         $this->assertStringContainsString('Bob', $render);
+    }
+
+    public function testCreatesBackupOnSave(): void
+    {
+        $board = new HighScoreBoard($this->testFile);
+        $board->add('Alice', 500, 3, 15, 2);
+        $this->assertFileExists($this->testFile . '.bak');
+    }
+
+    public function testRecoversFromBackupWhenMainFileCorrupt(): void
+    {
+        $board = new HighScoreBoard($this->testFile);
+        $board->add('Alice', 500, 3, 15, 2);
+        $board = null;
+
+        file_put_contents($this->testFile, 'corrupted!');
+
+        $board = new HighScoreBoard($this->testFile);
+        $top = $board->getTop(10);
+        $this->assertCount(1, $top);
+        $this->assertSame('Alice', $top[0]['name']);
+    }
+
+    public function testStartsEmptyWhenBothFilesCorrupt(): void
+    {
+        file_put_contents($this->testFile, 'corrupted!');
+        file_put_contents($this->testFile . '.bak', 'also bad');
+
+        $board = new HighScoreBoard($this->testFile);
+        $this->assertEmpty($board->getTop(10));
+    }
+
+    public function testStartsEmptyWhenBackupIsAlsoCorrupt(): void
+    {
+        $board = new HighScoreBoard($this->testFile);
+        $board->add('Alice', 500, 3, 15, 2);
+        $board = null;
+
+        file_put_contents($this->testFile, 'corrupted!');
+        file_put_contents($this->testFile . '.bak', 'also bad');
+
+        $recovered = new HighScoreBoard($this->testFile);
+        $this->assertEmpty($recovered->getTop(10));
     }
 }

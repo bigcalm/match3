@@ -41,7 +41,7 @@ A terminal-based Match-3 puzzle game (Bejeweled/Candy Crush style) written in PH
 | `Input` | Raw `fread(STDIN, …)` loop, `readRawKey()` for raw bytes, delegates to `KeyBindings`, optional non-blocking `stream_select` timeout |
 | `KeyBindings` | Loads preset or custom JSON map, `getAction(bytes) → string` |
 | `Level` | Goal definitions, `isComplete(state)`, move/time limits, 20-level table |
-| `HighScoreBoard` | Load/save `data/high_scores.json`, mode-split boards (moves/timer), `renderAll()` shows both |
+| `HighScoreBoard` | Load/save `data/high_scores.json` (atomic write + `.bak` fallback), mode-split boards (moves/timer), `renderAll()` shows both |
 | `Game` | Main loop: input → logic → render, state machine, timer-mode support, `play()` static lifecycle |
 | `WelcomeScreen` | Interactive menu: mode/preset selection, start game, leaderboard, quit |
 
@@ -112,7 +112,7 @@ bin/play
 
 - `readline()` blocks for a full line. Use `fread(STDIN, 1)` on a raw terminal for single-key input.
 - Mouse SGR coordinates are 1-based; account for HUD/border offset when mapping to grid cells.
-- `data/high_scores.json` may be missing or corrupted — handle gracefully (start empty).
+- `data/high_scores.json` may be missing or corrupted — handle gracefully (start empty). On write, uses atomic `rename` + `.bak` copy; corrupt main file auto-recovers from `.bak`.
 - Level targets need play-testing; start generous and tighten.
 - PHP `readline` is not used. Use raw `fread` + ANSI escapes for all I/O.
 - Minimum PHP version: 8.3 (Ubuntu 24.04 LTS default, security support until Dec 2027).
