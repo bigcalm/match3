@@ -18,6 +18,7 @@ class KeyBindingsTest extends TestCase
         $this->assertSame('confirm', $kb->getAction("\n"));
         $this->assertSame('quit', $kb->getAction('q'));
         $this->assertSame('cancel', $kb->getAction("\e"));
+        $this->assertSame('pause', $kb->getAction('p'));
     }
 
     public function testWasdPreset(): void
@@ -28,6 +29,7 @@ class KeyBindingsTest extends TestCase
         $this->assertSame('down', $kb->getAction('s'));
         $this->assertSame('right', $kb->getAction('d'));
         $this->assertSame('swap', $kb->getAction('f'));
+        $this->assertSame('pause', $kb->getAction('p'));
     }
 
     public function testHjklPreset(): void
@@ -37,6 +39,7 @@ class KeyBindingsTest extends TestCase
         $this->assertSame('left', $kb->getAction('h'));
         $this->assertSame('down', $kb->getAction('j'));
         $this->assertSame('right', $kb->getAction('l'));
+        $this->assertSame('pause', $kb->getAction('p'));
     }
 
     public function testUnknownPresetFallsBackToArrows(): void
@@ -59,6 +62,21 @@ class KeyBindingsTest extends TestCase
         $kb = new KeyBindings();
         $kb->loadCustom($tmpFile);
         $this->assertSame('quit', $kb->getAction('x'));
+        $this->assertSame('up', $kb->getAction("\e[A"));
+
+        unlink($tmpFile);
+    }
+
+    public function testCustomJsonMergesWithPreset(): void
+    {
+        $tmpFile = tempnam(sys_get_temp_dir(), 'kb_test_');
+        file_put_contents($tmpFile, json_encode(['z' => 'select']));
+
+        $kb = new KeyBindings('wasd');
+        $kb->loadCustom($tmpFile);
+        $this->assertSame('select', $kb->getAction('z'));
+        $this->assertSame('up', $kb->getAction('w'));
+        $this->assertSame('select', $kb->getAction(' '));
 
         unlink($tmpFile);
     }

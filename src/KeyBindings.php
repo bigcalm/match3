@@ -16,6 +16,7 @@ class KeyBindings
             "\e" => 'cancel',
             '?' => 'hint',
             'b' => 'leaderboard',
+            'p' => 'pause',
         ],
         'wasd' => [
             'w' => 'up',
@@ -29,6 +30,7 @@ class KeyBindings
             "\e" => 'cancel',
             '?' => 'hint',
             'b' => 'leaderboard',
+            'p' => 'pause',
         ],
         'hjkl' => [
             'k' => 'up',
@@ -42,6 +44,7 @@ class KeyBindings
             "\e" => 'cancel',
             '?' => 'hint',
             'b' => 'leaderboard',
+            'p' => 'pause',
         ],
     ];
 
@@ -76,8 +79,6 @@ class KeyBindings
         if (!is_array($json)) {
             return;
         }
-
-        $this->bindings = [];
 
         foreach ($json as $key => $action) {
             $this->bindings[$this->parseKeyName($key)] = $action;
