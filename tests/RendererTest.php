@@ -416,4 +416,62 @@ class RendererTest extends TestCase
         $this->assertStringStartsWith("\e[H\e[J", $out);
         $this->assertStringContainsString('┌───┬', $out);
     }
+
+    // --- Title box ---
+
+    public function testRenderTitleBoxHasCorrectBorders(): void
+    {
+        $out = Renderer::renderTitleBox('TEST');
+        $this->assertStringStartsWith("\e[1m╔", $out);
+        $this->assertStringContainsString("═╗\n║", $out);
+        $this->assertStringContainsString("║\n╚", $out);
+        $this->assertStringEndsWith("═╝\e[0m\n", $out);
+    }
+
+    public function testRenderTitleBoxCentersText(): void
+    {
+        $out = Renderer::renderTitleBox('TEST');
+        $this->assertStringContainsString('║           TEST           ║', $out);
+    }
+
+    public function testRenderTitleBoxHandlesDifferentLengths(): void
+    {
+        $short = Renderer::renderTitleBox('A');
+        $this->assertStringContainsString('╔══', $short);
+        $this->assertStringContainsString('A', $short);
+        $this->assertStringContainsString('══╝', $short);
+
+        $long = Renderer::renderTitleBox('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+        $this->assertStringContainsString('ABCDEFGHIJKLMNOPQRSTUVWXYZ', $long);
+        $this->assertStringContainsString('║', $long);
+    }
+
+    // --- Splash with newline ---
+
+    public function testSplashWithNewlineShowsBothLines(): void
+    {
+        $grid = new Grid(7);
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+            }
+        }
+        $r = new Renderer();
+        $out = $r->render($grid, splash: "TOP LINE\nbottom line");
+        $this->assertStringContainsString('TOP LINE', $out);
+        $this->assertStringContainsString('bottom line', $out);
+    }
+
+    public function testSplashWithoutNewlineShowsOnlyRow3(): void
+    {
+        $grid = new Grid(7);
+        for ($r = 0; $r < Grid::ROWS; $r++) {
+            for ($c = 0; $c < Grid::COLS; $c++) {
+                $grid->setCell($r, $c, ($r + $c) % 7);
+            }
+        }
+        $r = new Renderer();
+        $out = $r->render($grid, splash: "SINGLE");
+        $this->assertStringContainsString('SINGLE', $out);
+    }
 }

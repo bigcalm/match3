@@ -48,11 +48,15 @@ class Renderer
 
         for ($r = 0; $r < Grid::ROWS; $r++) {
             if ($splash !== null && ($r === 3 || $r === 4)) {
+                $lines = explode("\n", $splash, 2);
+                $row3 = $lines[0];
+                $row4 = $lines[1] ?? '';
+
                 if ($r === 3) {
-                    $padded = str_pad('LEVEL CLEAR!', 29, ' ', STR_PAD_BOTH);
+                    $padded = str_pad($row3, 29, ' ', STR_PAD_BOTH);
                     $out .= '│ ' . self::ANSI_BOLD . self::ANSI_YELLOW . $padded . self::ANSI_RESET . ' │';
                 } else {
-                    $padded = str_pad($splash, 29, ' ', STR_PAD_BOTH);
+                    $padded = str_pad($row4, 29, ' ', STR_PAD_BOTH);
                     $out .= '│ ' . $padded . ' │';
                 }
             } else {
@@ -162,5 +166,16 @@ class Renderer
     {
         $inner = str_repeat('─', Grid::COLS * 3 + Grid::COLS - 1);
         return '├' . $inner . '┤';
+    }
+
+    public static function renderTitleBox(string $title): string
+    {
+        $inner = 26;
+        $padded = str_pad($title, $inner, ' ', STR_PAD_BOTH);
+        return self::ANSI_BOLD
+            . '╔' . str_repeat('═', $inner) . "╗\n"
+            . '║' . $padded . "║\n"
+            . '╚' . str_repeat('═', $inner) . '╝'
+            . self::ANSI_RESET . "\n";
     }
 }
