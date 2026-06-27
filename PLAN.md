@@ -92,11 +92,12 @@ Collect all matched positions into a set. Runs can overlap.
 - Cascade multiplier: each successive cascade step doubles the per-match points.
 
 ### 3.5 Levels & Goals
-- Each level has a goal definition (e.g. "score 500 pts", "clear 10 red gems").
-- A HUD shows goal progress (e.g. `Goal: 340/500 pts` or `Red gems: 4/10`).
-- When all goals are met, show a level-complete animation and advance.
+- Each level has a score goal (e.g. "reach 500 pts").
+- A HUD shows goal progress (e.g. `Goal: ▓▓░░░ 340/500`).
+- When the goal is met, the level advances immediately (after the current cascade settles).
 - Level progression increases difficulty: fewer gem types, larger grid, higher targets, fewer moves.
 - Game ends when either: no valid moves remain (game-over) OR move limit exceeded (level fail).
+- All 20 levels use score-only goals. Clear-gem and cascade-survival goal types were prototyped on a branch but discarded — score already proxies for them and the UX/cost of multiple progress bars in a terminal HUD was too high.
 
 ### 3.6 Move Tracking
 - Valid move: swap produces ≥1 match → increment `validMoves`.
@@ -211,7 +212,7 @@ User writes a JSON config file mapping key names or byte sequences to actions:
 - [x] Special gems (bomb, hypercube, striped).
 - [x] Timer mode vs. move-limited mode.
 - [x] Leaderboard (save to file, mode-split boards).
-- [ ] Sound effects via terminal bell (`\a`).
+- [x] ~~Sound effects via terminal bell (`\a`).~~ Tried — not worth the effort for the result. Removed.
 
 ---
 
