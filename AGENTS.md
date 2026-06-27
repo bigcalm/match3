@@ -90,15 +90,16 @@ bin/play
 
 ### Levels
 
-- Goal types: target score, clear N gems of a colour, survive N cascades.
+- Goal type: target score only (clear/cascade goals were prototyped but discarded — score proxies for both).
 - Level table (20 levels) defined in `Level` constructor or a static method. Harder = fewer gem types, larger grid, higher targets, fewer moves.
-- Game-over when no valid moves remain (`Grid::hasValidMoves()`). Level fail when move limit exceeded (moves mode) or time runs out (timer mode).
+- Game-over when no valid moves remain (`Grid::hasValidMoves()`), move limit exceeded (moves mode), or time runs out (timer mode).
+- On game-over a stats screen shows score, level, moves, time, longest cascade, and biggest clear.
 
 ### Key bindings
 
 - Three built-in presets: `arrows` (default), `wasd`, `hjkl`.
 - Custom: JSON file mapping key names or byte sequences to actions.
-- Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `quit`, `confirm`, `cancel`, `hint`, `leaderboard`.
+- Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `quit`, `confirm`, `cancel`, `hint`, `leaderboard`, `pause`.
 
 ### Scoring
 

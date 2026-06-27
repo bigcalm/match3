@@ -26,9 +26,11 @@
   Shows score, level, moves (valid/invalid), time played, longest cascade,
   and biggest clear in a formatted panel before the high-score prompt.
 
-- **Pause key**
-  No way to pause in timer mode. A `p` key (mapped in all three presets)
-  that freezes the timer and overlays "PAUSED" until any key is pressed.
+- **Pause key** ✅
+  `p` mapped in all three presets, ignored in moves mode. Clears the
+  screen entirely (hides the grid — no cheating) and shows a centred
+  "PAUSED" box. Timer stops during pause (adjusts `startTime` by pause
+  duration on resume). Any key unpauses and redraws the grid.
 
 - **High-score file resilience**
   `data/high_scores.json` is read with graceful-empty on missing/corrupt,

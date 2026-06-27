@@ -214,6 +214,12 @@ User writes a JSON config file mapping key names or byte sequences to actions:
 - [x] Leaderboard (save to file, mode-split boards).
 - [x] ~~Sound effects via terminal bell (`\a`).~~ Tried — not worth the effort for the result. Removed.
 
+### Phase 8 — Polish
+- [x] Level-complete splash animation (centred "LEVEL CLEAR!" banner, 1.2 s).
+- [x] Game-over stats screen (score, level, moves, time, longest cascade, biggest clear).
+- [x] Pause key (`P`, timer mode only — hides grid to prevent cheating, timer freezes on resume).
+- [x] Centred title box helper (`Renderer::renderTitleBox()`) — eliminates manual space-counting alignment bugs.
+
 ---
 
 ## 7. Data Flow
