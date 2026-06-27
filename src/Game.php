@@ -33,6 +33,7 @@ class Game
     private const int CASCADE_SETTLE_US = 200_000;
     private const int FLASH_ON_US = 250_000;
     private const int FLASH_OFF_US = 200_000;
+    private const int SPLASH_DISPLAY_US = 1_200_000;
     private const int CLICK_COL_OFFSET = 2;
     private const int CLICK_COL_STRIDE = 4;
     private const int CLICK_ROW_OFFSET = 2;
@@ -335,6 +336,10 @@ class Game
         $this->processCascade();
 
         if ($this->level->isComplete(['score' => $this->score])) {
+            $hud = $this->buildHud();
+            $footer = $this->buildFooter();
+            $this->renderAndWait(self::SPLASH_DISPLAY_US, [], $hud, $footer, "Lv.{$this->level->getNumber()}");
+
             $next = $this->level->next();
 
             if ($next !== null) {
@@ -427,10 +432,10 @@ class Game
         } while (true);
     }
 
-    private function renderAndWait(int $durationUs, array $highlights, array $hud, string $footer): void
+    private function renderAndWait(int $durationUs, array $highlights, array $hud, string $footer, ?string $splash = null): void
     {
         $start = hrtime(true);
-        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $highlights, $hud, $footer);
+        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $highlights, $hud, $footer, $splash);
 
         if (!self::$disableAnimations) {
             if (ob_get_level()) { ob_flush(); }

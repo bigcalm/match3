@@ -32,6 +32,7 @@ class Renderer
         array $highlights = [],
         array $hud = [],
         string $footer = '',
+        ?string $splash = null,
     ): string {
         $highlightSet = [];
 
@@ -46,46 +47,60 @@ class Renderer
         $out .= $this->border('┌', '┐', '┬') . "\n";
 
         for ($r = 0; $r < Grid::ROWS; $r++) {
-            $out .= '│';
-            for ($c = 0; $c < Grid::COLS; $c++) {
-                $gem = $grid->getCell($r, $c);
-
-                if ($gem === -1) {
-                    $out .= '   │';
-                    continue;
-                }
-
-                $special = $grid->getSpecial($r, $c);
-                $color = self::COLORS[$gem];
-                $symbol = self::GEMS[$gem];
-
-                if ($special === Grid::HYPERCUBE) {
-                    $symbol = 'H';
-                } elseif ($special === Grid::BOMB) {
-                    $symbol = 'B';
-                }
-
-                $sel = $r === $cursorRow && $c === $cursorCol;
-                $spc = $special === Grid::STRIPED_H || $special === Grid::STRIPED_V;
-                $bomb = $special === Grid::BOMB;
-
-                if (isset($highlightSet["$r,$c"])) {
-                    $out .= " " . self::ANSI_BOLD . self::ANSI_REVERSE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
-                } elseif ($sel) {
-                    $out .= " " . self::ANSI_REVERSE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
-                } elseif ($r === $selectedRow && $c === $selectedCol) {
-                    $out .= " " . self::ANSI_UNDERLINE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
-                } elseif ($spc) {
-                    $out .= " " . self::ANSI_UNDERLINE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
-                } elseif ($bomb) {
-                    $out .= " " . self::ANSI_BOLD . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+            if ($splash !== null && ($r === 3 || $r === 4)) {
+                if ($r === 3) {
+                    $padded = str_pad('LEVEL CLEAR!', 29, ' ', STR_PAD_BOTH);
+                    $out .= '│ ' . self::ANSI_BOLD . self::ANSI_YELLOW . $padded . self::ANSI_RESET . ' │';
                 } else {
-                    $out .= " \e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    $padded = str_pad($splash, 29, ' ', STR_PAD_BOTH);
+                    $out .= '│ ' . $padded . ' │';
+                }
+            } else {
+                $out .= '│';
+                for ($c = 0; $c < Grid::COLS; $c++) {
+                    $gem = $grid->getCell($r, $c);
+
+                    if ($gem === -1) {
+                        $out .= '   │';
+                        continue;
+                    }
+
+                    $special = $grid->getSpecial($r, $c);
+                    $color = self::COLORS[$gem];
+                    $symbol = self::GEMS[$gem];
+
+                    if ($special === Grid::HYPERCUBE) {
+                        $symbol = 'H';
+                    } elseif ($special === Grid::BOMB) {
+                        $symbol = 'B';
+                    }
+
+                    $sel = $r === $cursorRow && $c === $cursorCol;
+                    $spc = $special === Grid::STRIPED_H || $special === Grid::STRIPED_V;
+                    $bomb = $special === Grid::BOMB;
+
+                    if (isset($highlightSet["$r,$c"])) {
+                        $out .= " " . self::ANSI_BOLD . self::ANSI_REVERSE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    } elseif ($sel) {
+                        $out .= " " . self::ANSI_REVERSE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    } elseif ($r === $selectedRow && $c === $selectedCol) {
+                        $out .= " " . self::ANSI_UNDERLINE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    } elseif ($spc) {
+                        $out .= " " . self::ANSI_UNDERLINE . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    } elseif ($bomb) {
+                        $out .= " " . self::ANSI_BOLD . "\e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    } else {
+                        $out .= " \e[{$color}m{$symbol}" . self::ANSI_RESET . " │";
+                    }
                 }
             }
             $out .= "\n";
             if ($r < Grid::ROWS - 1) {
-                $out .= $this->border('├', '┤', '┼') . "\n";
+                if ($splash !== null && $r === 3) {
+                    $out .= $this->borderSolid() . "\n";
+                } else {
+                    $out .= $this->border('├', '┤', '┼') . "\n";
+                }
             }
         }
 
@@ -141,5 +156,11 @@ class Renderer
             $segments[] = '───';
         }
         return $left . implode($tee, $segments) . $right;
+    }
+
+    private function borderSolid(): string
+    {
+        $inner = str_repeat('─', Grid::COLS * 3 + Grid::COLS - 1);
+        return '├' . $inner . '┤';
     }
 }
