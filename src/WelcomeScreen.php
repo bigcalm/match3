@@ -8,14 +8,16 @@ class WelcomeScreen
     private int $cursor = 0;
     private string $mode = 'moves';
     private string $preset = 'arrows';
+    private string $mouseMode = 'drag';
 
-    private const int ITEM_COUNT = 5;
+    private const int ITEM_COUNT = 6;
 
     private const int MODE_ROW = 0;
     private const int PRESET_ROW = 1;
-    private const int START_ROW = 2;
-    private const int LEADERBOARD_ROW = 3;
-    private const int QUIT_ROW = 4;
+    private const int MOUSE_ROW = 2;
+    private const int START_ROW = 3;
+    private const int LEADERBOARD_ROW = 4;
+    private const int QUIT_ROW = 5;
 
     public function __construct(Input $input)
     {
@@ -76,11 +78,12 @@ class WelcomeScreen
 
         $out .= $this->renderModeSelector() . "\n";
         $out .= $this->renderPresetSelector() . "\n";
+        $out .= $this->renderMouseSelector() . "\n";
         $out .= $this->renderAction('  Start Game', self::START_ROW) . "\n";
         $out .= $this->renderAction('  Leaderboard', self::LEADERBOARD_ROW) . "\n";
         $out .= $this->renderAction('  Quit', self::QUIT_ROW) . "\n";
 
-        $out .= "\n" . Renderer::ANSI_DIM . "Arrow/WASD/HJKL navigate  Space/Enter select  Q quit" . Renderer::ANSI_RESET . "\n";
+        $out .= "\n" . Renderer::ANSI_DIM . "Arrow/WASD/HJKL navigate  ←→ change  Space/Enter select  Q quit" . Renderer::ANSI_RESET . "\n";
 
         echo $out;
     }
@@ -131,6 +134,29 @@ class WelcomeScreen
         return "   {$line}";
     }
 
+    private function renderMouseSelector(): string
+    {
+        $label = ' Mouse: ';
+        $opts = ['drag', 'click'];
+        $parts = [];
+
+        foreach ($opts as $m) {
+            if ($m === $this->mouseMode) {
+                $parts[] = Renderer::ANSI_REVERSE . " {$m} " . Renderer::ANSI_RESET;
+            } else {
+                $parts[] = "  {$m}  ";
+            }
+        }
+
+        $line = $label . implode(' ', $parts);
+
+        if ($this->cursor === self::MOUSE_ROW) {
+            return Renderer::ANSI_YELLOW . "→" . Renderer::ANSI_RESET . " {$line}";
+        }
+
+        return "   {$line}";
+    }
+
     private function renderAction(string $label, int $row): string
     {
         if ($this->cursor === $row) {
@@ -151,13 +177,17 @@ class WelcomeScreen
             $i = array_search($this->preset, $presets, true);
             $this->preset = $presets[($i + $dir + 3) % 3];
             $this->input->loadBindingsPreset($this->preset);
+        } elseif ($this->cursor === self::MOUSE_ROW) {
+            $modes = ['drag', 'click'];
+            $i = array_search($this->mouseMode, $modes, true);
+            $this->mouseMode = $modes[($i + $dir + 2) % 2];
         }
     }
 
     private function activate(): ?array
     {
         return match ($this->cursor) {
-            self::START_ROW => ['action' => 'start', 'mode' => $this->mode, 'preset' => $this->preset],
+            self::START_ROW => ['action' => 'start', 'mode' => $this->mode, 'preset' => $this->preset, 'mouseMode' => $this->mouseMode],
             self::LEADERBOARD_ROW => ['action' => 'leaderboard'],
             self::QUIT_ROW => ['action' => 'quit'],
             default => null,

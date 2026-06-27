@@ -59,6 +59,24 @@ class InputTest extends TestCase
         $this->assertNull($m->invoke($input, $seq));
     }
 
+    public function testParseMouseAcceptsMInClickMode(): void
+    {
+        $input = new Input(new KeyBindings('arrows'));
+        $input->setMouseMode('click');
+        $m = new \ReflectionMethod(Input::class, 'parseMouse');
+        $m->setAccessible(true);
+        $this->assertSame([15, 18], $m->invoke($input, "\e[<0;15;18M"));
+    }
+
+    public function testParseMouseRejectsMInClickMode(): void
+    {
+        $input = new Input(new KeyBindings('arrows'));
+        $input->setMouseMode('click');
+        $m = new \ReflectionMethod(Input::class, 'parseMouse');
+        $m->setAccessible(true);
+        $this->assertNull($m->invoke($input, "\e[<0;15;18m"));
+    }
+
     public function testGetActionWithZeroTimeoutReturnsNull(): void
     {
         $input = new Input(new KeyBindings('arrows'));

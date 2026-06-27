@@ -17,7 +17,7 @@ class WelcomeScreenTest extends TestCase
     }
 
     // Default cursor is 0 (MODE_ROW).
-    // ITEM_COUNT = 5: MODE_ROW=0, PRESET_ROW=1, START_ROW=2, LEADERBOARD_ROW=3, QUIT_ROW=4.
+    // ITEM_COUNT = 6: MODE_ROW=0, PRESET_ROW=1, MOUSE_ROW=2, START_ROW=3, LEADERBOARD_ROW=4, QUIT_ROW=5.
 
     public function testQuitKey(): void
     {
@@ -33,14 +33,20 @@ class WelcomeScreenTest extends TestCase
         $welcome = new WelcomeScreen($input);
         $input->queueAction('down');
         $input->queueAction('down');
+        $input->queueAction('down');
         $input->queueAction('select');
-        $this->assertSame(['action' => 'start', 'mode' => 'moves', 'preset' => 'arrows'], $this->runSilent($welcome));
+        $result = $this->runSilent($welcome);
+        $this->assertSame('start', $result['action']);
+        $this->assertSame('moves', $result['mode']);
+        $this->assertSame('arrows', $result['preset']);
+        $this->assertSame('drag', $result['mouseMode']);
     }
 
     public function testNavigateDownToLeaderboardAndSelect(): void
     {
         $input = new TestableInput(new KeyBindings('arrows'));
         $welcome = new WelcomeScreen($input);
+        $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -52,6 +58,7 @@ class WelcomeScreenTest extends TestCase
     {
         $input = new TestableInput(new KeyBindings('arrows'));
         $welcome = new WelcomeScreen($input);
+        $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -69,6 +76,7 @@ class WelcomeScreenTest extends TestCase
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
+        $input->queueAction('down');
         $input->queueAction('select');
         $this->assertSame(['action' => 'quit'], $this->runSilent($welcome));
     }
@@ -78,6 +86,7 @@ class WelcomeScreenTest extends TestCase
         $input = new TestableInput(new KeyBindings('arrows'));
         $welcome = new WelcomeScreen($input);
         $input->queueAction('right');
+        $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('select');
@@ -93,6 +102,7 @@ class WelcomeScreenTest extends TestCase
         $input->queueAction('down');
         $input->queueAction('right');
         $input->queueAction('down');
+        $input->queueAction('down');
         $input->queueAction('select');
         $result = $this->runSilent($welcome);
         $this->assertSame('start', $result['action']);
@@ -107,6 +117,7 @@ class WelcomeScreenTest extends TestCase
         $input->queueAction('right');
         $input->queueAction('right');
         $input->queueAction('down');
+        $input->queueAction('down');
         $input->queueAction('select');
         $result = $this->runSilent($welcome);
         $this->assertSame('start', $result['action']);
@@ -119,8 +130,11 @@ class WelcomeScreenTest extends TestCase
         $welcome = new WelcomeScreen($input);
         $input->queueAction('down');
         $input->queueAction('down');
+        $input->queueAction('down');
         $input->queueAction('confirm');
-        $this->assertSame(['action' => 'start', 'mode' => 'moves', 'preset' => 'arrows'], $this->runSilent($welcome));
+        $result = $this->runSilent($welcome);
+        $this->assertSame('start', $result['action']);
+        $this->assertSame('drag', $result['mouseMode']);
     }
 
     public function testLeftRightNoOpOnActionRows(): void
@@ -129,10 +143,27 @@ class WelcomeScreenTest extends TestCase
         $welcome = new WelcomeScreen($input);
         $input->queueAction('down');
         $input->queueAction('down');
+        $input->queueAction('down');
         $input->queueAction('left');
         $input->queueAction('right');
         $input->queueAction('select');
-        $this->assertSame(['action' => 'start', 'mode' => 'moves', 'preset' => 'arrows'], $this->runSilent($welcome));
+        $result = $this->runSilent($welcome);
+        $this->assertSame('start', $result['action']);
+        $this->assertSame('drag', $result['mouseMode']);
+    }
+
+    public function testChangeMouseModeToClick(): void
+    {
+        $input = new TestableInput(new KeyBindings('arrows'));
+        $welcome = new WelcomeScreen($input);
+        $input->queueAction('down');
+        $input->queueAction('down');
+        $input->queueAction('right');
+        $input->queueAction('down');
+        $input->queueAction('select');
+        $result = $this->runSilent($welcome);
+        $this->assertSame('start', $result['action']);
+        $this->assertSame('click', $result['mouseMode']);
     }
 
     public function testNullActionDoesNotCrash(): void

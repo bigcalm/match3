@@ -9,6 +9,7 @@ class Input
     private KeyBindings $bindings;
     /** @var resource */
     private $stdin;
+    private string $mouseMode = 'drag';
 
     public function __construct(KeyBindings $bindings)
     {
@@ -25,6 +26,11 @@ class Input
     public function loadBindingsPreset(string $name): void
     {
         $this->bindings->loadPreset($name);
+    }
+
+    public function setMouseMode(string $mode): void
+    {
+        $this->mouseMode = $mode;
     }
 
     public static function enableRawMode(): void
@@ -96,10 +102,20 @@ class Input
         stream_set_blocking($this->stdin, false);
         usleep(self::ESCAPE_TIMEOUT_US);
 
-        $rest = fread($this->stdin, 64);
+        for ($i = 0; $i < 32; $i++) {
+            $b = fread($this->stdin, 1);
 
-        if ($rest !== false && $rest !== '') {
-            $seq .= $rest;
+            if ($b === false || $b === '') {
+                break;
+            }
+
+            $seq .= $b;
+
+            $ord = ord($b);
+
+            if ($ord >= 0x40 && $ord <= 0x7E && $ord !== 0x5B) {
+                break;
+            }
         }
 
         stream_set_blocking($this->stdin, $wasBlocking);
@@ -115,7 +131,7 @@ class Input
 
         $last = substr($seq, -1);
 
-        if ($last !== 'M' && $last !== 'm') {
+        if ($last !== 'M' && ($this->mouseMode !== 'drag' || $last !== 'm')) {
             return null;
         }
 

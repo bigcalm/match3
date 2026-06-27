@@ -37,8 +37,9 @@ while (true) {
 
     $mode = $welcomeResult['mode'];
     $preset = $welcomeResult['preset'];
+    $mouseMode = $welcomeResult['mouseMode'] ?? 'drag';
 
-    Game::play($preset, null, $mode);
+    Game::play($preset, null, $mode, $mouseMode);
 
     Input::enableRawMode();
 }

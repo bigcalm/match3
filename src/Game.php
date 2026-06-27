@@ -19,6 +19,7 @@ class Game
     private int $movesUsed = 0;
     private string $preset;
     private string $mode;
+    private string $mouseMode = 'drag';
     private int $startTime = 0;
     private bool $gameOver = false;
 
@@ -34,10 +35,11 @@ class Game
     private const int CLICK_ROW_OFFSET = 2;
     private const int CLICK_ROW_STRIDE = 2;
 
-    public function __construct(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves')
+    public function __construct(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves', string $mouseMode = 'drag')
     {
         $this->preset = $preset;
         $this->mode = $mode;
+        $this->mouseMode = $mouseMode;
         $this->renderer = new Renderer();
 
         $bindings = new KeyBindings($preset);
@@ -47,16 +49,17 @@ class Game
         }
 
         $this->input = new Input($bindings);
+        $this->input->setMouseMode($this->mouseMode);
         $this->level = new Level(1);
         $this->grid = new Grid($this->level->getGemTypes());
     }
 
-    public static function play(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves'): void
+    public static function play(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves', string $mouseMode = 'drag'): void
     {
         Input::enableRawMode();
         Input::enableMouseTracking();
 
-        $game = new self($preset, $customBindings, $mode);
+        $game = new self($preset, $customBindings, $mode, $mouseMode);
         $result = $game->run();
 
         Input::restoreTerminal();
@@ -207,7 +210,8 @@ class Game
             default => $this->preset,
         };
 
-        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  Hint: H/?  |  Quit: Q";
+        $mouseHint = $this->mouseMode === 'click' ? 'Mouse: click-click' : 'Mouse: click-drag';
+        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  {$mouseHint}  |  Hint: H/?  |  Quit: Q";
     }
 
     private function buildHud(): array
