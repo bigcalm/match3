@@ -415,24 +415,10 @@ class Game
 
             $this->animateFlash($flashCells, $hud, $footer);
 
-            $keepMap = [];
+            $toClear = $allCells;
+
             foreach ($keep as [$kr, $kc]) {
-                $keepMap["$kr,$kc"] = true;
-            }
-
-            $toClear = [];
-
-            foreach ($matches as [$mr, $mc]) {
-                if (!isset($keepMap["$mr,$mc"])) {
-                    $toClear["$mr,$mc"] = [$mr, $mc];
-                }
-            }
-
-            foreach ($activated as $ap) {
-                $ak = "{$ap[0]},{$ap[1]}";
-                if (!isset($keepMap[$ak]) && !isset($toClear[$ak])) {
-                    $toClear[$ak] = $ap;
-                }
+                unset($toClear["$kr,$kc"]);
             }
 
             $this->grid->removeCells(array_values($toClear));
