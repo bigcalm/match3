@@ -17,7 +17,7 @@ class KeyBindingsTest extends TestCase
         $this->assertSame('select', $kb->getAction(' '));
         $this->assertSame('confirm', $kb->getAction("\n"));
         $this->assertSame('quit', $kb->getAction('q'));
-        $this->assertSame('quit', $kb->getAction("\e"));
+        $this->assertSame('cancel', $kb->getAction("\e"));
     }
 
     public function testWasdPreset(): void

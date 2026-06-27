@@ -139,6 +139,12 @@ class Game
                 continue;
             }
 
+            if ($action === 'cancel') {
+                $this->selRow = -1;
+                $this->selCol = -1;
+                continue;
+            }
+
             if ($action === 'hint') {
                 $this->handleHint();
                 continue;

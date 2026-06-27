@@ -80,7 +80,7 @@ class WelcomeScreen
         $out .= $this->renderAction('  Leaderboard', self::LEADERBOARD_ROW) . "\n";
         $out .= $this->renderAction('  Quit', self::QUIT_ROW) . "\n";
 
-        $out .= "\n\e[2mArrow/WASD/HJKL navigate  Space/Enter select  Esc/Q quit\e[0m\n";
+        $out .= "\n\e[2mArrow/WASD/HJKL navigate  Space/Enter select  Q quit\e[0m\n";
 
         echo $out;
     }

@@ -48,7 +48,8 @@ On launch you'll see a welcome screen where you can:
 | Confirm | `Enter` | `Enter` | `Enter` |
 | Hint | `H` / `?` | `H` / `?` | `?` |
 | Leaderboard | `B` | `B` | `B` |
-| Quit | `Q` / `Escape` | `Q` / `Escape` | `Q` / `Escape` |
+| Quit | `Q` | `Q` | `Q` |
+| Cancel selection | `Esc` / `Escape` | `Esc` / `Escape` | `Esc` / `Escape` |
 
 You can also click gems with the mouse.
 
