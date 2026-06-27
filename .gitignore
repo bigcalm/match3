@@ -2,5 +2,5 @@
 /data/high_scores.json
 /data/settings.json
 .phpunit.cache/
-REVIEW.md
+REVIEW*.md
 session-ses_*.md
