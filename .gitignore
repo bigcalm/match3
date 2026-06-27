@@ -1,6 +1,8 @@
 /vendor/
 /data/high_scores.json
+/data/high_scores.json.*
 /data/settings.json
+/data/custom_bindings.json
 .phpunit.cache/
 REVIEW*.md
 session-ses_*.md
