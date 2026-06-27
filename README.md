@@ -28,7 +28,10 @@ On launch you'll see a welcome screen where you can:
 |---|---|---|
 | Game mode | `moves` (default) or `timer` | `←` `→` |
 | Key preset | `arrows`, `wasd`, `hjkl` | `←` `→` |
+| Mouse mode | `drag` or `click` | `←` `→` |
 | Start / Leaderboard / Quit | select with `↑` `↓` + `Enter` |
+
+Your settings persist across sessions via `data/settings.json`. Delete that file to reset to defaults.
 
 ### Welcome screen
 
@@ -41,7 +44,7 @@ On launch you'll see a welcome screen where you can:
 
 ### In-game controls
 
-**Common to all presets:** `Space` (select/swap), `Enter` (confirm), `?` (hint), `B` (leaderboard), `Q` (quit), `Esc` (cancel selection).
+**Common to all presets:** `Space` (select/swap), `Enter` (confirm), `?` (hint), `B` (leaderboard), `P` (pause, timer mode only), `Q` (quit), `Esc` (cancel selection).
 
 | Preset | Up | Down | Left | Right |
 |--------|----|------|------|-------|
@@ -53,22 +56,37 @@ On launch you'll see a welcome screen where you can:
 
 You can also click gems with the mouse.
 
+On game-over a stats screen shows score, level reached, moves (valid/invalid), longest cascade chain, biggest single clear, and time played (moves mode).
+
 ### Custom key bindings
 
-Create a JSON file mapping key names or byte sequences to actions:
+Place a `data/custom_bindings.json` file to override any keys from your chosen preset. Only the keys you specify are overridden — all other preset keys keep working. Below are the default bindings so you know what to override.
+
+| Action | arrows | wasd | hjkl |
+|---|---|---|---|
+| Up | `↑` (`\e[A`) | `W` | `K` |
+| Down | `↓` (`\e[B`) | `S` | `J` |
+| Left | `←` (`\e[D`) | `A` | `H` |
+| Right | `→` (`\e[C`) | `D` | `L` |
+| Select / swap | `Space` | `Space` / `F` | `Space` / `F` |
+| Confirm | `Enter` | `Enter` | `Enter` |
+| Cancel | `Escape` | `Escape` | `Escape` |
+| Hint | `?` | `?` | `?` |
+| Leaderboard | `B` | `B` | `B` |
+| Pause | `P` | `P` | `P` |
+| Quit | `Q` | `Q` | `Q` |
+
+Recognised key names for custom bindings: `up`, `down`, `left`, `right`, `space`, `enter`, `escape`, `tab`, or any single character.
+
+Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hint`, `leaderboard`, `cancel`, `pause`.
+
+Example `data/custom_bindings.json` that switches movement to `IJKL` while keeping everything else:
 
 ```json
 {
-    "i": "up", "j": "left", "k": "down", "l": "right",
-    "space": "select",
-    "escape": "quit",
-    "h": "hint",
-    "b": "leaderboard"
+    "i": "up", "j": "left", "k": "down", "l": "right"
 }
 ```
-
-Recognised key names: `up`, `down`, `left`, `right`, `space`, `enter`, `escape`, `tab`, or any single character.
-Actions: `up`, `down`, `left`, `right`, `select`, `swap`, `confirm`, `quit`, `hint`, `leaderboard`, `cancel`.
 
 ## Rules
 
@@ -107,7 +125,7 @@ Hypercubes activate on swap rather than match — swap with an adjacent gem to c
 ```bash
 composer install           # Install dependencies (dev included)
 php -l src/                # Lint all source files
-./vendor/bin/phpunit       # Run tests (61 tests, PHPUnit 13)
+./vendor/bin/phpunit       # Run tests (168 tests, PHPUnit 13)
 ```
 
 ## Project structure
@@ -123,16 +141,23 @@ src/
 ├── Renderer.php          # ANSI frame rendering, HUD, controls footer
 └── WelcomeScreen.php     # Interactive menu for mode and preset selection
 data/
-└── high_scores.json      # Persisted high scores
+├── high_scores.json      # Persisted high scores
+└── settings.json         # Persisted welcome screen settings
 tests/
 ├── FunctionalTest.php    # Integration tests
+├── GameTest.php          # Game loop and stats tests
 ├── GridTest.php          # Grid logic tests
 ├── HighScoreBoardTest.php
+├── InputTest.php         # Mouse SGR parsing, timeout
 ├── KeyBindingsTest.php
-└── LevelTest.php
+├── LevelTest.php
+├── RendererTest.php      # Output structure, HUD, special gems
+├── TestableInput.php     # Action-queue input stub for testing
+└── WelcomeScreenTest.php # Menu navigation, settings persistence
 bin/
 ├── play                  # Entry point (welcome screen + game loop)
-└── leaderboard           # Standalone high score viewer
+├── leaderboard           # Standalone high score viewer
+└── test-animation        # Animation test script
 ```
 
 ## License
