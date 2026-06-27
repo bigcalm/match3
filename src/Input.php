@@ -4,7 +4,7 @@ namespace Match3;
 
 class Input
 {
-    private const int ESCAPE_TIMEOUT_US = 10000;
+    private const int ESCAPE_TIMEOUT_US = 5000;
 
     private KeyBindings $bindings;
     /** @var resource */
@@ -100,21 +100,26 @@ class Input
         $meta = stream_get_meta_data($this->stdin);
         $wasBlocking = $meta['blocked'];
         stream_set_blocking($this->stdin, false);
-        usleep(self::ESCAPE_TIMEOUT_US);
 
-        for ($i = 0; $i < 32; $i++) {
-            $b = fread($this->stdin, 1);
+        $read = [$this->stdin];
+        $write = [];
+        $except = [];
 
-            if ($b === false || $b === '') {
-                break;
-            }
+        if (stream_select($read, $write, $except, 0, self::ESCAPE_TIMEOUT_US) > 0) {
+            for ($i = 0; $i < 32; $i++) {
+                $b = fread($this->stdin, 1);
 
-            $seq .= $b;
+                if ($b === false || $b === '') {
+                    break;
+                }
 
-            $ord = ord($b);
+                $seq .= $b;
 
-            if ($ord >= 0x40 && $ord <= 0x7E && $ord !== 0x5B) {
-                break;
+                $ord = ord($b);
+
+                if ($ord >= 0x40 && $ord <= 0x7E && $ord !== 0x5B) {
+                    break;
+                }
             }
         }
 
