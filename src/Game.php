@@ -24,6 +24,8 @@ class Game
     private int $elapsedSeconds = 0;
     private bool $gameOver = false;
 
+    public static bool $disableAnimations = false;
+
     private const int TIMER_RENDER_INTERVAL_NS = 200_000_000;
     private const int INPUT_TIMEOUT_US = 200_000;
     private const int HINT_DISPLAY_US = 400_000;
@@ -429,10 +431,13 @@ class Game
     {
         $start = hrtime(true);
         echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $highlights, $hud, $footer);
-        if (ob_get_level()) { ob_flush(); }
-        flush();
-        $elapsedUs = (int) ((hrtime(true) - $start) / 1_000);
-        usleep(max(0, $durationUs - $elapsedUs));
+
+        if (!self::$disableAnimations) {
+            if (ob_get_level()) { ob_flush(); }
+            flush();
+            $elapsedUs = (int) ((hrtime(true) - $start) / 1_000);
+            usleep(max(0, $durationUs - $elapsedUs));
+        }
     }
 
     private function animateFlash(array $flashCells, array $hud, string $footer): void
