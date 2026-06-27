@@ -293,10 +293,7 @@ class Game
 
         $hud = $this->buildHud();
         $footer = $this->buildFooter();
-        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $hint, $hud, $footer);
-        if (ob_get_level()) { ob_flush(); }
-        flush();
-        usleep(self::HINT_DISPLAY_US);
+        $this->renderAndWait(self::HINT_DISPLAY_US, $hint, $hud, $footer);
     }
 
     private function handleLeaderboard(): void
@@ -426,32 +423,30 @@ class Game
             $this->grid->removeCells(array_values($toClear));
 
             if (!empty($toClear)) {
-                echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
-                if (ob_get_level()) { ob_flush(); }
-                flush();
-                usleep(self::CASCADE_GAP_US);
+                $this->renderAndWait(self::CASCADE_GAP_US, [], $hud, $footer);
             }
 
             $this->grid->applyGravity();
-            echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
-            if (ob_get_level()) { ob_flush(); }
-            flush();
-            usleep(self::CASCADE_SETTLE_US);
+            $this->renderAndWait(self::CASCADE_SETTLE_US, [], $hud, $footer);
             $cascadeStep++;
         } while (true);
+    }
+
+    private function renderAndWait(int $durationUs, array $highlights, array $hud, string $footer): void
+    {
+        $start = hrtime(true);
+        echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $highlights, $hud, $footer);
+        if (ob_get_level()) { ob_flush(); }
+        flush();
+        $elapsedUs = (int) ((hrtime(true) - $start) / 1_000);
+        usleep(max(0, $durationUs - $elapsedUs));
     }
 
     private function animateFlash(array $flashCells, array $hud, string $footer): void
     {
         for ($i = 0; $i < 3; $i++) {
-            echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, $flashCells, $hud, $footer);
-            if (ob_get_level()) { ob_flush(); }
-            flush();
-            usleep(self::FLASH_ON_US);
-            echo $this->renderer->render($this->grid, $this->cursorRow, $this->cursorCol, -1, -1, [], $hud, $footer);
-            if (ob_get_level()) { ob_flush(); }
-            flush();
-            usleep(self::FLASH_OFF_US);
+            $this->renderAndWait(self::FLASH_ON_US, $flashCells, $hud, $footer);
+            $this->renderAndWait(self::FLASH_OFF_US, [], $hud, $footer);
         }
     }
 
