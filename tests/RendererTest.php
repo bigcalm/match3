@@ -363,7 +363,7 @@ class RendererTest extends TestCase
         $this->assertStringNotContainsString('░', $out);
     }
 
-    public function testHudHidesProgressBarWhenNoGoal(): void
+    public function testHudShowsEmptyProgressBarWhenNoGoal(): void
     {
         $grid = new Grid();
         $r = new Renderer();
@@ -377,7 +377,8 @@ class RendererTest extends TestCase
             'movesLeft' => 40,
             'movesTotal' => 40,
         ]);
-        $this->assertStringNotContainsString('Goal:', $out);
+        $this->assertStringContainsString('Goal:', $out);
+        $this->assertStringContainsString('0/0', $out);
     }
 
     // --- Footer ---

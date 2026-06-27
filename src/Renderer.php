@@ -123,13 +123,11 @@ class Renderer
             $out .= sprintf(" Moves: %d/%-10d   Valid: %d  Invalid: %d\n", $movesLeft, $movesTotal, $validMoves, $invalidMoves);
         }
 
-        if ($scoreGoal > 0) {
-            $pct = min(1.0, $score / $scoreGoal);
-            $barWidth = 20;
-            $filled = (int) round($pct * $barWidth);
-            $bar = str_repeat('▓', $filled) . str_repeat('░', $barWidth - $filled);
-            $out .= sprintf(" Goal: Score          %s  %d/%d\n", $bar, $score, $scoreGoal);
-        }
+        $pct = $scoreGoal > 0 ? min(1.0, $score / $scoreGoal) : 0.0;
+        $barWidth = 20;
+        $filled = (int) round($pct * $barWidth);
+        $bar = str_repeat('▓', $filled) . str_repeat('░', $barWidth - $filled);
+        $out .= sprintf(" Goal: Score          %s  %d/%d\n", $bar, $score, $scoreGoal);
 
         $out .= "\n";
 
