@@ -76,13 +76,9 @@ class Game
         echo Renderer::ANSI_CLEAR_ALL_HOME;
 
         if ($result['won']) {
-            echo Renderer::ANSI_BOLD . "╔══════════════════════════════╗\n";
-            echo "║         YOU WIN!           ║\n";
-            echo "╚══════════════════════════════╝" . Renderer::ANSI_RESET . "\n\n";
+            echo Renderer::renderTitleBox('YOU WIN!') . "\n";
         } else {
-            echo Renderer::ANSI_BOLD . "╔══════════════════════════════╗\n";
-            echo "║        GAME OVER           ║\n";
-            echo "╚══════════════════════════════╝" . Renderer::ANSI_RESET . "\n\n";
+            echo Renderer::renderTitleBox('GAME OVER') . "\n";
         }
 
         $min = intdiv($result['timePlayed'], 60);
@@ -182,6 +178,11 @@ class Game
                 continue;
             }
 
+            if ($action === 'pause') {
+                $this->handlePause();
+                continue;
+            }
+
             match ($action) {
                 'up' => $this->cursorRow = max(0, $this->cursorRow - 1),
                 'down' => $this->cursorRow = min(Grid::ROWS - 1, $this->cursorRow + 1),
@@ -235,7 +236,7 @@ class Game
         };
 
         $mouseHint = $this->mouseMode === 'click' ? 'Mouse: click-click' : 'Mouse: click-drag';
-        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  {$mouseHint}  |  Hint: ?  |  Quit: Q";
+        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  {$mouseHint}  |  Hint: ?  |  Pause: P  |  Quit: Q";
     }
 
     private function buildHud(): array
@@ -334,6 +335,23 @@ class Game
         }
     }
 
+    private function handlePause(): void
+    {
+        if ($this->mode !== 'timer') {
+            return;
+        }
+
+        echo Renderer::ANSI_CLEAR_ALL_HOME;
+        echo Renderer::renderTitleBox('PAUSED') . "\n";
+        echo Renderer::ANSI_DIM . "   Press any key to resume" . Renderer::ANSI_RESET . "\n";
+        if (ob_get_level()) { ob_flush(); }
+        flush();
+
+        $pauseStart = hrtime(true);
+        $this->input->readRawKey();
+        $this->startTime += hrtime(true) - $pauseStart;
+    }
+
     private function attemptSwap(int $r1, int $c1, int $r2, int $c2): void
     {
         if ($this->gameOver) {
@@ -370,7 +388,7 @@ class Game
         if ($this->level->isComplete(['score' => $this->score])) {
             $hud = $this->buildHud();
             $footer = $this->buildFooter();
-            $this->renderAndWait(self::SPLASH_DISPLAY_US, [], $hud, $footer, "Lv.{$this->level->getNumber()}");
+            $this->renderAndWait(self::SPLASH_DISPLAY_US, [], $hud, $footer, "LEVEL CLEAR!\nLv.{$this->level->getNumber()}");
 
             $next = $this->level->next();
 

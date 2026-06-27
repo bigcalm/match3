@@ -233,4 +233,24 @@ class GameTest extends TestCase
         $this->assertSame(24, $result['maxClear']);
         $this->assertGreaterThanOrEqual(0, $result['timePlayed']);
     }
+
+    public function testHandlePauseReturnsEarlyInMovesMode(): void
+    {
+        $game = new Game(mode: 'moves');
+        $ref = new \ReflectionClass($game);
+
+        $modeProp = $ref->getProperty('mode');
+        $modeProp->setAccessible(true);
+        $this->assertSame('moves', $modeProp->getValue($game));
+
+        $startTimeProp = $ref->getProperty('startTime');
+        $startTimeProp->setAccessible(true);
+        $before = $startTimeProp->getValue($game);
+
+        $method = $ref->getMethod('handlePause');
+        $method->setAccessible(true);
+        $method->invoke($game);
+
+        $this->assertSame($before, $startTimeProp->getValue($game));
+    }
 }
