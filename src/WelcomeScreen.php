@@ -19,9 +19,13 @@ class WelcomeScreen
     private const int LEADERBOARD_ROW = 4;
     private const int QUIT_ROW = 5;
 
-    public function __construct(Input $input)
+    private string $settingsPath;
+
+    public function __construct(Input $input, ?string $settingsPath = null)
     {
         $this->input = $input;
+        $this->settingsPath = $settingsPath ?? __DIR__ . '/../data/settings.json';
+        $this->loadSettings();
     }
 
     public function run(): array
@@ -172,15 +176,18 @@ class WelcomeScreen
             $modes = ['moves', 'timer'];
             $i = array_search($this->mode, $modes, true);
             $this->mode = $modes[($i + $dir + 2) % 2];
+            $this->saveSettings();
         } elseif ($this->cursor === self::PRESET_ROW) {
             $presets = ['arrows', 'wasd', 'hjkl'];
             $i = array_search($this->preset, $presets, true);
             $this->preset = $presets[($i + $dir + 3) % 3];
             $this->input->loadBindingsPreset($this->preset);
+            $this->saveSettings();
         } elseif ($this->cursor === self::MOUSE_ROW) {
             $modes = ['drag', 'click'];
             $i = array_search($this->mouseMode, $modes, true);
             $this->mouseMode = $modes[($i + $dir + 2) % 2];
+            $this->saveSettings();
         }
     }
 
@@ -192,5 +199,46 @@ class WelcomeScreen
             self::QUIT_ROW => ['action' => 'quit'],
             default => null,
         };
+    }
+
+    private function loadSettings(): void
+    {
+        if (!is_file($this->settingsPath)) {
+            return;
+        }
+
+        $data = json_decode(file_get_contents($this->settingsPath), true);
+
+        if (!is_array($data)) {
+            return;
+        }
+
+        if (isset($data['mode']) && in_array($data['mode'], ['moves', 'timer'], true)) {
+            $this->mode = $data['mode'];
+        }
+
+        if (isset($data['preset']) && in_array($data['preset'], ['arrows', 'wasd', 'hjkl'], true)) {
+            $this->preset = $data['preset'];
+            $this->input->loadBindingsPreset($this->preset);
+        }
+
+        if (isset($data['mouseMode']) && in_array($data['mouseMode'], ['drag', 'click'], true)) {
+            $this->mouseMode = $data['mouseMode'];
+        }
+    }
+
+    private function saveSettings(): void
+    {
+        $dir = dirname($this->settingsPath);
+
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+
+        file_put_contents($this->settingsPath, json_encode([
+            'mode' => $this->mode,
+            'preset' => $this->preset,
+            'mouseMode' => $this->mouseMode,
+        ], JSON_PRETTY_PRINT));
     }
 }

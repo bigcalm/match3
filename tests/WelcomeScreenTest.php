@@ -8,6 +8,28 @@ use PHPUnit\Framework\TestCase;
 
 class WelcomeScreenTest extends TestCase
 {
+    private string $settingsFile;
+
+    protected function setUp(): void
+    {
+        $this->settingsFile = sys_get_temp_dir() . '/match3_settings_' . uniqid() . '.json';
+    }
+
+    protected function tearDown(): void
+    {
+        if (is_file($this->settingsFile)) {
+            unlink($this->settingsFile);
+        }
+    }
+
+    /** @return array{TestableInput, WelcomeScreen} */
+    private function makeWelcome(string $preset = 'arrows'): array
+    {
+        $input = new TestableInput(new KeyBindings($preset));
+        $welcome = new WelcomeScreen($input, $this->settingsFile);
+        return [$input, $welcome];
+    }
+
     private function runSilent(WelcomeScreen $welcome): array
     {
         ob_start();
@@ -21,16 +43,14 @@ class WelcomeScreenTest extends TestCase
 
     public function testQuitKey(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('quit');
         $this->assertSame(['action' => 'quit'], $this->runSilent($welcome));
     }
 
     public function testSelectStartFromDefault(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -44,8 +64,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testNavigateDownToLeaderboardAndSelect(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -56,8 +75,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testNavigateDownToQuitAndSelect(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -69,8 +87,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testNavigateUpFromDefaultStaysAtTop(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('up');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -83,8 +100,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testChangeModeToTimer(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('right');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -97,8 +113,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testChangePresetToWasd(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('right');
         $input->queueAction('down');
@@ -111,8 +126,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testChangePresetToHjkl(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('right');
         $input->queueAction('right');
@@ -126,8 +140,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testConfirmKeyAlsoSelects(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -139,8 +152,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testLeftRightNoOpOnActionRows(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('down');
@@ -154,8 +166,7 @@ class WelcomeScreenTest extends TestCase
 
     public function testChangeMouseModeToClick(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('down');
         $input->queueAction('down');
         $input->queueAction('right');
@@ -166,10 +177,37 @@ class WelcomeScreenTest extends TestCase
         $this->assertSame('click', $result['mouseMode']);
     }
 
+    public function testSettingsPersistAcrossSessions(): void
+    {
+        [$input, $welcome] = $this->makeWelcome();
+        // Change mode to timer, preset to wasd, mouse to click
+        $input->queueAction('right');       // mode → timer
+        $input->queueAction('down');        // to preset row
+        $input->queueAction('right');       // preset → wasd
+        $input->queueAction('down');        // to mouse row
+        $input->queueAction('right');       // mouse → click
+        $input->queueAction('down');        // to start
+        $input->queueAction('select');
+        $result = $this->runSilent($welcome);
+        $this->assertSame('timer', $result['mode']);
+        $this->assertSame('wasd', $result['preset']);
+        $this->assertSame('click', $result['mouseMode']);
+
+        // Create a new WelcomeScreen with the same settings file — should load saved values
+        [$input2, $welcome2] = $this->makeWelcome();
+        $input2->queueAction('down');
+        $input2->queueAction('down');
+        $input2->queueAction('down');
+        $input2->queueAction('select');
+        $result2 = $this->runSilent($welcome2);
+        $this->assertSame('timer', $result2['mode']);
+        $this->assertSame('wasd', $result2['preset']);
+        $this->assertSame('click', $result2['mouseMode']);
+    }
+
     public function testNullActionDoesNotCrash(): void
     {
-        $input = new TestableInput(new KeyBindings('arrows'));
-        $welcome = new WelcomeScreen($input);
+        [$input, $welcome] = $this->makeWelcome();
         $input->queueAction('quit');
         $this->assertSame(['action' => 'quit'], $this->runSilent($welcome));
     }
