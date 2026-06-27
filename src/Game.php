@@ -57,7 +57,6 @@ class Game
 
     public static function play(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves', string $mouseMode = 'drag'): void
     {
-        Input::enableRawMode();
         Input::enableMouseTracking();
 
         $game = new self($preset, $customBindings, $mode, $mouseMode);
