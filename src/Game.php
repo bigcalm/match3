@@ -21,6 +21,7 @@ class Game
     private string $mode;
     private string $mouseMode = 'drag';
     private int $startTime = 0;
+    private int $elapsedSeconds = 0;
     private bool $gameOver = false;
 
     private const int TIMER_RENDER_INTERVAL_NS = 200_000_000;
@@ -103,6 +104,7 @@ class Game
 
         while (true) {
             $now = hrtime(true);
+            $this->elapsedSeconds = (int) (($now - $this->startTime) / 1_000_000_000);
 
             if ($this->mode === 'timer') {
                 if ($now - $lastRender >= self::TIMER_RENDER_INTERVAL_NS) {
@@ -178,18 +180,12 @@ class Game
 
     private function isTimeUp(): bool
     {
-        if ($this->mode !== 'timer') {
-            return false;
-        }
-
-        $elapsed = (int) ((hrtime(true) - $this->startTime) / 1_000_000_000);
-        return $elapsed >= $this->level->getTimeLimit();
+        return $this->mode === 'timer' && $this->elapsedSeconds >= $this->level->getTimeLimit();
     }
 
     private function getTimeLeft(): int
     {
-        $elapsed = (int) ((hrtime(true) - $this->startTime) / 1_000_000_000);
-        return max(0, $this->level->getTimeLimit() - $elapsed);
+        return max(0, $this->level->getTimeLimit() - $this->elapsedSeconds);
     }
 
     private function render(): void
