@@ -244,13 +244,10 @@ class Game
         } elseif ($this->cursorRow === $this->selRow && $this->cursorCol === $this->selCol) {
             $this->selRow = -1;
             $this->selCol = -1;
-        } elseif (abs($this->cursorRow - $this->selRow) + abs($this->cursorCol - $this->selCol) === 1) {
+        } else {
             $this->attemptSwap($this->selRow, $this->selCol, $this->cursorRow, $this->cursorCol);
             $this->selRow = -1;
             $this->selCol = -1;
-        } else {
-            $this->selRow = $this->cursorRow;
-            $this->selCol = $this->cursorCol;
         }
     }
 
