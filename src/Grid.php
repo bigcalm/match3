@@ -16,6 +16,8 @@ class Grid
     private int $gemTypes;
     private array $grid = [];
     private array $special = [];
+    private bool $hasPendingActivation = false;
+    private array $pendingActivationCells = [];
 
     public function __construct(int $gemTypes = 7)
     {
@@ -151,6 +153,19 @@ class Grid
         $this->special[$row][$col] = $type;
     }
 
+    public function hasPendingActivation(): bool
+    {
+        return $this->hasPendingActivation;
+    }
+
+    public function consumeActivation(): array
+    {
+        $cells = $this->pendingActivationCells;
+        $this->hasPendingActivation = false;
+        $this->pendingActivationCells = [];
+        return $cells;
+    }
+
     public function swap(int $r1, int $c1, int $r2, int $c2): bool
     {
         if (abs($r1 - $r2) + abs($c1 - $c2) !== 1) {
@@ -182,16 +197,18 @@ class Grid
         $this->special[$hr][$hc] = self::NONE;
         $this->special[$tr][$tc] = self::NONE;
 
+        $cleared = [];
+
         for ($r = 0; $r < self::ROWS; $r++) {
             for ($c = 0; $c < self::COLS; $c++) {
                 if ($this->grid[$r][$c] === $targetType) {
-                    $this->grid[$r][$c] = -1;
-                    $this->special[$r][$c] = self::NONE;
+                    $cleared[] = [$r, $c];
                 }
             }
         }
 
-        $this->applyGravity();
+        $this->hasPendingActivation = true;
+        $this->pendingActivationCells = $cleared;
 
         return true;
     }

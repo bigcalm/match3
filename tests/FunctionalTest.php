@@ -251,7 +251,7 @@ class FunctionalTest extends TestCase
         $this->assertSame(Grid::HYPERCUBE, $grid->getSpecial($pos[0], $pos[1]));
     }
 
-    public function testHypercubeSwapClearsAllOfType(): void
+    public function testHypercubeSwapIdentifiesAllOfType(): void
     {
         $grid = new Grid(7);
 
@@ -268,6 +268,17 @@ class FunctionalTest extends TestCase
         $grid->setSpecial(3, 3, Grid::HYPERCUBE);
 
         $this->assertTrue($grid->swap(3, 3, 3, 4));
+        $this->assertTrue($grid->hasPendingActivation());
+
+        $activated = $grid->consumeActivation();
+        $this->assertGreaterThan(0, count($activated));
+
+        foreach ($activated as [$r, $c]) {
+            $this->assertSame(2, $grid->getCell($r, $c));
+        }
+
+        $grid->removeCells($activated);
+        $grid->applyGravity();
 
         for ($r = 0; $r < Grid::ROWS; $r++) {
             for ($c = 0; $c < Grid::COLS; $c++) {

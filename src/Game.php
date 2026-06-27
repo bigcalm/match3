@@ -323,6 +323,17 @@ class Game
         $this->validMoves++;
         $this->movesUsed++;
 
+        if ($this->grid->hasPendingActivation()) {
+            $activated = $this->grid->consumeActivation();
+            $hud = $this->buildHud();
+            $footer = $this->buildFooter();
+            $this->animateFlash($activated, $hud, $footer);
+            $this->grid->removeCells($activated);
+            $this->renderAndWait(self::CASCADE_GAP_US, [], $hud, $footer);
+            $this->grid->applyGravity();
+            $this->renderAndWait(self::CASCADE_SETTLE_US, [], $hud, $footer);
+        }
+
         $this->processCascade();
 
         if ($this->level->isComplete(['score' => $this->score])) {
