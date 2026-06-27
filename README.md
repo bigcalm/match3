@@ -41,15 +41,15 @@ On launch you'll see a welcome screen where you can:
 
 ### In-game controls
 
-| Action | arrows | wasd | hjkl |
-|---|---|---|---|
-| Move cursor | `↑` `↓` `←` `→` | `W` `A` `S` `D` | `K` `H` `J` `L` |
-| Select / swap | `Space` | `Space` / `F` | `Space` / `F` |
-| Confirm | `Enter` | `Enter` | `Enter` |
-| Hint | `H` / `?` | `H` / `?` | `?` |
-| Leaderboard | `B` | `B` | `B` |
-| Quit | `Q` | `Q` | `Q` |
-| Cancel selection | `Esc` / `Escape` | `Esc` / `Escape` | `Esc` / `Escape` |
+**Common to all presets:** `Space` (select/swap), `Enter` (confirm), `?` (hint), `B` (leaderboard), `Q` (quit), `Esc` (cancel selection).
+
+| Preset | Up | Down | Left | Right |
+|--------|----|------|------|-------|
+| arrows | `↑` | `↓` | `←` | `→` |
+| wasd | `W` | `S` | `A` | `D` |
+| hjkl | `K` | `J` | `H` | `L` |
+
+`wasd` and `hjkl` also accept `F` for swap.
 
 You can also click gems with the mouse.
 
@@ -60,8 +60,10 @@ Create a JSON file mapping key names or byte sequences to actions:
 ```json
 {
     "i": "up", "j": "left", "k": "down", "l": "right",
-    " ": "select", "q": "quit",
-    "up": "up", "space": "select", "escape": "quit"
+    "space": "select",
+    "escape": "quit",
+    "h": "hint",
+    "b": "leaderboard"
 }
 ```
 

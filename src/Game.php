@@ -211,7 +211,7 @@ class Game
         };
 
         $mouseHint = $this->mouseMode === 'click' ? 'Mouse: click-click' : 'Mouse: click-drag';
-        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  {$mouseHint}  |  Hint: H/?  |  Quit: Q";
+        return " Preset: {$this->preset}  |  Move: {$controls}  |  Select: Space  |  {$mouseHint}  |  Hint: ?  |  Quit: Q";
     }
 
     private function buildHud(): array
