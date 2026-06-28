@@ -4,10 +4,19 @@ namespace Match3\Tests;
 
 use Match3\Game;
 use Match3\Grid;
+use Match3\KeyBindings;
 use PHPUnit\Framework\TestCase;
 
 class GameTest extends TestCase
 {
+    private function makeTestableGame(string $mode = 'moves', ?Grid $grid = null): array
+    {
+        $renderer = new TestableRenderer();
+        $input = new TestableInput(new KeyBindings('arrows'));
+        $game = new Game(mode: $mode, grid: $grid, renderer: $renderer, input: $input);
+        return [$game, $renderer, $input];
+    }
+
     private function setGridNoMatch(Grid $grid): void
     {
         for ($r = 0; $r < Grid::ROWS; $r++) {
@@ -155,17 +164,15 @@ class GameTest extends TestCase
 
     public function testLevelCompletionTakesPriorityOverMoveLimit(): void
     {
-        $game = new Game(mode: 'moves');
-        $ref = new \ReflectionClass($game);
-
-        $gridProp = $ref->getProperty('grid');
-        $gridProp->setAccessible(true);
-        $grid = $gridProp->getValue($game);
+        $grid = new Grid(7);
         $this->setGridNoMatch($grid);
         $grid->setCell(0, 0, 1);
         $grid->setCell(0, 1, 1);
         $grid->setCell(0, 2, 2);
         $grid->setCell(1, 2, 1);
+
+        [$game] = $this->makeTestableGame(grid: $grid);
+        $ref = new \ReflectionClass($game);
 
         $scoreProp = $ref->getProperty('score');
         $scoreProp->setAccessible(true);
@@ -179,9 +186,7 @@ class GameTest extends TestCase
         $method->setAccessible(true);
 
         Game::$disableAnimations = true;
-        ob_start();
         $method->invoke($game, 0, 2, 1, 2);
-        ob_end_clean();
         Game::$disableAnimations = false;
 
         $gameOverProp = $ref->getProperty('gameOver');
@@ -205,7 +210,7 @@ class GameTest extends TestCase
 
     public function testRunReturnsAllStats(): void
     {
-        $game = new Game(mode: 'moves');
+        [$game] = $this->makeTestableGame();
         $ref = new \ReflectionClass($game);
 
         $gameOverProp = $ref->getProperty('gameOver');
@@ -221,9 +226,7 @@ class GameTest extends TestCase
         $maxClearProp->setValue($game, 24);
 
         Game::$disableAnimations = true;
-        ob_start();
         $result = $game->run();
-        ob_end_clean();
         Game::$disableAnimations = false;
 
         $this->assertArrayHasKey('maxCascade', $result);

@@ -41,30 +41,51 @@ class Game
     private const int CLICK_ROW_OFFSET = 2;
     private const int CLICK_ROW_STRIDE = 2;
 
-    public function __construct(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves', string $mouseMode = 'drag')
-    {
+    public function __construct(
+        string $preset = 'arrows',
+        ?string $customBindings = null,
+        string $mode = 'moves',
+        string $mouseMode = 'drag',
+        ?Grid $grid = null,
+        ?Level $level = null,
+        ?Renderer $renderer = null,
+        ?Input $input = null,
+    ) {
         $this->preset = $preset;
         $this->mode = $mode;
         $this->mouseMode = $mouseMode;
-        $this->renderer = new Renderer();
+        $this->renderer = $renderer ?? new Renderer();
 
-        $bindings = new KeyBindings($preset);
+        if ($input !== null) {
+            $this->input = $input;
+        } else {
+            $bindings = new KeyBindings($preset);
 
-        if ($customBindings !== null) {
-            $bindings->loadCustom($customBindings);
+            if ($customBindings !== null) {
+                $bindings->loadCustom($customBindings);
+            }
+
+            $this->input = new Input($bindings);
         }
 
-        $this->input = new Input($bindings);
         $this->input->setMouseMode($this->mouseMode);
-        $this->level = new Level(1);
-        $this->grid = new Grid($this->level->getGemTypes());
+        $this->level = $level ?? new Level(1);
+        $this->grid = $grid ?? new Grid($this->level->getGemTypes());
     }
 
-    public static function play(string $preset = 'arrows', ?string $customBindings = null, string $mode = 'moves', string $mouseMode = 'drag'): void
-    {
+    public static function play(
+        string $preset = 'arrows',
+        ?string $customBindings = null,
+        string $mode = 'moves',
+        string $mouseMode = 'drag',
+        ?Grid $grid = null,
+        ?Level $level = null,
+        ?Renderer $renderer = null,
+        ?Input $input = null,
+    ): void {
         Input::enableMouseTracking();
 
-        $game = new self($preset, $customBindings, $mode, $mouseMode);
+        $game = new self($preset, $customBindings, $mode, $mouseMode, $grid, $level, $renderer, $input);
         $result = $game->run();
 
         Input::restoreTerminal();
