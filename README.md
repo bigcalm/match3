@@ -153,6 +153,7 @@ tests/
 ├── LevelTest.php
 ├── RendererTest.php      # Output structure, HUD, special gems
 ├── TestableInput.php     # Action-queue input stub for testing
+├── TestableRenderer.php  # Captures render calls, returns empty string
 └── WelcomeScreenTest.php # Menu navigation, settings persistence
 bin/
 ├── play                  # Entry point (welcome screen + game loop)
